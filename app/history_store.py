@@ -14,6 +14,7 @@ from app.history import simulate_history
 ROOT = Path(__file__).resolve().parent.parent
 HISTORY_PATH = ROOT / "data" / "processed" / "price_history.json"
 MIN_DAYS = 365
+MIN_REAL_DAYS = 60   # with this much real history we use it as is, no simulated filler
 
 
 def _key(row):
@@ -60,7 +61,7 @@ def ensure_history(product_id, current_price, path=None, min_days=MIN_DAYS):
         span = (pd.Timestamp(max(r["timestamp"] for r in real)).tz_localize(None) - start).days + 1
     else:
         anchor, start, span = current_price, pd.Timestamp.today().normalize(), 0
-    if span >= min_days:
+    if span >= min_days or (real and span >= MIN_REAL_DAYS):
         return
     end = start.normalize() - pd.Timedelta(days=1)
     df = simulate_history(product_id, anchor, end, days=min_days - span)
@@ -69,16 +70,18 @@ def ensure_history(product_id, current_price, path=None, min_days=MIN_DAYS):
 
 
 def get_history(product_id, path=None) -> pd.DataFrame:
-    """All rows for one product. If real 'historical' (Keepa) rows exist, any
-    simulated rows from the same period are dropped so they can't mix in."""
+    """All rows for one product. Simulated rows never override real ones: with
+    enough real history they are all dropped, otherwise only the ones that
+    overlap the real period are."""
     rows = [r for r in load_rows(path) if r.get("product_id") == product_id]
     cols = ["timestamp", "price", "source"]
     if not rows:
         return pd.DataFrame(columns=cols)
     df = pd.DataFrame(rows)[cols]
     ts = pd.to_datetime(df["timestamp"], utc=True, format="ISO8601")
-    hist = ts[df["source"] == "historical"]
-    if not hist.empty:
-        stale = (df["source"] == "simulated") & (ts >= hist.min())
+    real = ts[df["source"] != "simulated"]
+    if not real.empty:
+        enough = (real.max() - real.min()).days >= MIN_REAL_DAYS
+        stale = (df["source"] == "simulated") & (True if enough else (ts >= real.min()))
         df = df[~stale]
     return df.reset_index(drop=True)

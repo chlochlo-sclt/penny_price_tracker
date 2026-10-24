@@ -23,35 +23,51 @@ PRODUCTS_FILE = ROOT / "products.json"
 
 ACTOR_ID = os.getenv("KEEPA_ACTOR_ID", "radeance/keepa-scraper")
 
-# Which series best matches the price shown on the product page. The first one
-# the Actor returns for a product wins. Check the field names in your first
-# output (the script prints every *_history field it sees) and reorder if needed.
-SERIES_PREFERENCE = ["buybox_price_history", "amazon_price_history", "new_price_history"]
+# Series that match the price shown on the product page. "new" is the lowest
+# price among ALL sellers, so it often sits below the page price: fallback only.
+PRIMARY_SERIES = ["buybox_price_history", "amazon_price_history"]
+FALLBACK_SERIES = ["new_price_history"]
+
+
+def _series_rows(item, field):
+    return [
+        {
+            "product_id": item.get("asin"),
+            "title": item.get("title"),
+            "timestamp": p["seen_at"],
+            "price": float(p["price"]),
+            "currency": item.get("currency") or "USD",
+            "source": "historical",
+            "data_type": field.replace("_price_history", ""),
+        }
+        for p in (item.get(field) or [])
+        if p.get("price") is not None and p.get("seen_at")
+    ]
+
+
+def _span_days(rows):
+    times = [datetime.fromisoformat(r["timestamp"].replace("Z", "+00:00")) for r in rows]
+    return (max(times) - min(times)).days
+
+
+def pick_series(item):
+    """Choose the series that covers the most time; among those within 80% of the
+    longest span, take the one with the most points (ties go to buy box)."""
+    if not item.get("asin"):
+        return None, []
+    for group in (PRIMARY_SERIES, FALLBACK_SERIES):
+        cands = [(f, _series_rows(item, f)) for f in group]
+        cands = [(f, r) for f, r in cands if r]
+        if cands:
+            longest = max(_span_days(r) for _, r in cands)
+            ok = [(f, r) for f, r in cands if _span_days(r) >= 0.8 * longest]
+            return max(ok, key=lambda c: len(c[1]))
+    return None, []
 
 
 def history_rows(item):
     """Convert one Keepa product record into price-history rows."""
-    asin = item.get("asin")
-    currency = item.get("currency") or "USD"
-    if not asin:
-        return []
-    for field in SERIES_PREFERENCE:
-        rows = [
-            {
-                "product_id": asin,
-                "title": item.get("title"),
-                "timestamp": p["seen_at"],
-                "price": float(p["price"]),
-                "currency": currency,
-                "source": "historical",
-                "data_type": field.replace("_price_history", ""),
-            }
-            for p in (item.get(field) or [])
-            if p.get("price") is not None and p.get("seen_at")
-        ]
-        if rows:
-            return rows
-    return []
+    return pick_series(item)[1]
 
 
 def fetch(asins):
@@ -67,6 +83,7 @@ def fetch(asins):
         "identifiers": asins,
         "marketplace": "us",
         "include_price_history": True,     # paid add-on: this is the history we want
+        "include_offers_sellers": False,   # another paid add-on we don't need
     })
     items = list(ApifyClient(token).dataset(run.default_dataset_id).iterate_items())
 
@@ -80,15 +97,19 @@ def fetch(asins):
 
 def save_items(items):
     for item in items:
-        rows = history_rows(item)
-        fields = sorted(k for k in item if k.endswith("_history"))
+        asin = item.get("asin")
+        print(f"\n{asin}: {(item.get('title') or '')[:60]}")
+        for key, val in sorted(item.items()):
+            if key.endswith("_history") and isinstance(val, list) and val \
+                    and isinstance(val[0], dict) and "seen_at" in val[0] and "price" in val[0]:
+                print(f"   {key}: {len(val)} points, {val[0]['seen_at'][:10]} to {val[-1]['seen_at'][:10]}")
+        field, rows = pick_series(item)
         if not rows:
-            print(f"{item.get('asin')}: NO usable price history. Fields seen: {fields}")
+            print("   NO usable price history for this product.")
             continue
-        added, total = save_observations(rows)
-        first, last = min(r["timestamp"] for r in rows), max(r["timestamp"] for r in rows)
-        print(f"{item.get('asin')}: {len(rows)} points ({first[:10]} to {last[:10]}), "
-              f"{added} new, using {rows[0]['data_type']} series")
+        added, _ = save_observations(rows)
+        print(f"   -> saved {len(rows)} points from {field} ({added} new), "
+              f"{_span_days(rows)} days of history")
 
 
 def main(asins=None):

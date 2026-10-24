@@ -109,3 +109,37 @@ def test_real_history_replaces_simulated_rows_for_the_same_period(tmp_path):
     h = get_history("B0KEEPATEST", path)
     assert history_source(h) == "real"
     assert (h["source"] == "simulated").sum() == 0
+
+
+def test_series_choice_prefers_the_one_with_real_coverage():
+    from app.fetch_history import pick_series
+    def pts(start, end, step):
+        d = pd.date_range(start, end, freq=step)
+        return [{"seen_at": x.strftime("%Y-%m-%dT%H:%M:%SZ"), "price": 50.0 + i % 7} for i, x in enumerate(d)]
+    base = {"asin": "B0SERIESTST", "currency": "USD"}
+    # buy box only covers 2 months, Amazon's own price covers 3 years -> Amazon wins
+    item = {**base, "buybox_price_history": pts("2026-08-20", "2026-10-20", "3D"),
+            "amazon_price_history": pts("2023-10-01", "2026-10-20", "7D")}
+    assert pick_series(item)[0] == "amazon_price_history"
+    # similar coverage -> the denser series wins
+    item = {**base, "buybox_price_history": pts("2023-10-01", "2026-10-20", "30D"),
+            "amazon_price_history": pts("2023-10-01", "2026-10-20", "7D")}
+    assert pick_series(item)[0] == "amazon_price_history"
+    # same coverage and density -> buy box (it matches the page price)
+    item = {**base, "buybox_price_history": pts("2023-10-01", "2026-10-20", "7D"),
+            "amazon_price_history": pts("2023-10-01", "2026-10-20", "7D")}
+    assert pick_series(item)[0] == "buybox_price_history"
+    # the lowest-any-seller series is only a fallback
+    item = {**base, "new_price_history": pts("2023-10-01", "2026-10-20", "2D"),
+            "buybox_price_history": pts("2023-10-01", "2026-10-20", "30D")}
+    assert pick_series(item)[0] == "buybox_price_history"
+
+
+def test_no_simulated_filler_when_there_is_enough_real_history(tmp_path):
+    path = tmp_path / "h.json"
+    rows = [_row("D", d.strftime("%Y-%m-%dT%H:%M:%SZ"), 40.0 + i % 5, "historical")
+            for i, d in enumerate(pd.date_range("2026-07-01", "2026-10-20", freq="3D"))]
+    save_observations(rows, path)                        # ~110 days of real history
+    ensure_history("D", 40.0, path)
+    h = get_history("D", path)
+    assert set(h["source"]) == {"historical"} and history_source(h) == "real"
