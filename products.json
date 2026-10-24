@@ -1,0 +1,24 @@
+
+[
+  {
+    "product_id": "demo-laptop-01",
+    "name": "Demo Wireless Headphones",
+    "retailer": "Amazon",
+    "product_url": "https://www.amazon.com/Apple-2026-MacBook-13-inch-Laptop/dp/B0GR1JTFP8/ref=sr_1_4?crid=3C67LGRE4LDAI&dib=eyJ2IjoiMSJ9.OPaO7p4_v6xQVezicmN-ajEpcZUWEeZI8rvWPDnbfPkJIX8KQ17RbUkt7QRRRADOOuMw26OOvN2bGKrpRMda8IzH4x49ZGxbAa2M_FPENYwPT5pwlnGCyS9kqjcxRyAgueSHFw7KE07uLa_uMbuD-jRq-S68K-5C_OQrDUEYO2AhXFqk9kQbQuKhlRwneBmhqt8eMaBpkk8AmyrC4-gqHoIQqt5pmqcNF9tRsqc-2p4.hAkw3lMXHeJVY6FT8ZfyfCszJ7wNbcqhsbR7YP004e0&dib_tag=se&keywords=macbook&qid=1792862508&sprefix=macbo%2Caps%2C359&sr=8-4",
+    "currency": "USD"
+  },
+  {
+    "product_id": "demo-toy-01",
+    "name": "LEGO Star Wars Millennium Falcon 75426",
+    "retailer": "Amazon - Logo",
+    "product_url": "https://www.amazon.com/LEGO-Star-Wars-Smart-Play/dp/B0FMYVYCY7/ref=sr_1_1?crid=208WYLT5LSVC1&dib=eyJ2IjoiMSJ9.vofV-3ArrYJhhv4xnn06JCY7YdGtLPAd_ne3tG74ZUmRYrVUzRWKyhKXeTtA_V9jMzP6mt_H3RlIMyC0UH9IN7N73QKvsu1dFBI_gR6J8sKydbyPNK9ST6HWnCTjbsS0NdKEWSo8EC9DQBBydNOSesrFcrvDRfG9rm4nVk42-hk1xSu91_LOXgo1rJbOy7_g-kyYGKE4Kl33jr49ZE2RN7MNDa5hwXK_GpLo1SMiBC7a99W0v27bvB8ASzY3dl4BwwZHJsWAzy3W0LpooUPbTxDJyG4GlD2qdXbkkVWRWGk.3Fkv3a-To_yphS9q43Mo4zePr_561GxcIud8YpZ5fgs&dib_tag=se&keywords=LEGO+Star+Wars+Millennium+Falcon+75426&qid=1792862712&sprefix=lego+star+wars+millennium+falcon+75426%2Caps%2C360&sr=8-1",
+    "currency": "USD"
+  },
+  {
+    "product_id": "demo-headphones-01",
+    "name": "Sony WH-1000XM4C",
+    "retailer": "Amazon - Sony",
+    "product_url": "https://www.amazon.com/Sony-WH-1000XM4C-Cancelling-Lightweight-Comfortable/dp/B0HFB8N519/ref=sr_1_1_sspa?crid=2ZR1DDLBRCRE0&dib=eyJ2IjoiMSJ9.a3qNSQ-Swv8FRc-glcgBMKhgdYJn5YIn7TsdSoi0AeeN4u2NSc1E1-nUeDdfrH2uedixuOBbMetmwxR90ndlME1haPH1iPGPGYMZ9CHLI6S28z8RsVxNBpQ2T308zeyvZHaDs-7XlT6EdNn_UYQ16PRDAOCewrnuef7eUZb9teKuxCc5o8eVHJ8nAdOk4B1IQZMkIIVil6iF3-e-NzK3T_JX8gc8F9TxvlfP9qg235I.IIwXGFXpj3wtvnGZQMedI3NhUGLJzIB6-c2CuZjO6Ik&dib_tag=se&keywords=Sony+headphones&qid=1792865338&sprefix=lego+star+wars+millennium+falcon+75426%2Caps%2C69699&sr=8-1-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1",
+    "currency": "USD"
+  }
+]

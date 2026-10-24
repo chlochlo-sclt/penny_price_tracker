@@ -1,0 +1,13 @@
+[
+  {
+    "product_id": null,
+    "title": "Apple 2026 MacBook Air 13-inch Laptop with M5 chip: Built for AI, 13.6-inch Liquid Retina Display, 16GB Unified Memory, 512GB SSD, 12MP Center Stage Camera, Touch ID, Wi-Fi 7; Midnight",
+    "url": "https://www.amazon.com/dp/B0GR1JTFP8",
+    "timestamp": "2026-10-24T19:02:20.575Z",
+    "price": 1149.0,
+    "currency": "USD",
+    "in_stock": null,
+    "source": "apify",
+    "data_type": "observed"
+  }
+]
