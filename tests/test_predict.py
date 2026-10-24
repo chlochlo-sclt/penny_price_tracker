@@ -55,3 +55,35 @@ def test_predict_expected_drop():
     data = client.get("/predict").json()
     assert data["expected_drop_usd"] == 15.0
     assert data["expected_drop_pct"] == 12.5
+
+
+def test_post_predict_uses_real_history(tmp_path, monkeypatch):
+    from app import history_store
+    monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
+
+    body = {"product_id": "B0TESTASIN1", "price": 120.0, "currency": "USD",
+            "preferences": {"risk_tolerance": "bold", "deadline_days": 35}}
+    data = client.post("/predict", json=body).json()
+
+    assert data["recommendation"] in ["buy_now", "wait"]
+    assert data["data_source"] == "simulated"          # nothing scraped for this ID
+    assert 0 <= data["p_drop"] <= 1
+
+
+def test_post_predict_rejects_non_usd(tmp_path, monkeypatch):
+    from app import history_store
+    monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
+
+    body = {"product_id": "B0TESTASIN1", "price": 99.0, "currency": "EUR"}
+    assert client.post("/predict", json=body).status_code == 422
+
+
+def test_cors_allows_extension_origin():
+    response = client.options(
+        "/predict",
+        headers={
+            "Origin": "chrome-extension://abcdefghijklmnop",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert response.headers["access-control-allow-origin"] == "chrome-extension://abcdefghijklmnop"

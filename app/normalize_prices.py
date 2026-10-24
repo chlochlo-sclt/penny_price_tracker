@@ -1,11 +1,23 @@
-
 import json
+import re
+import sys
 from pathlib import Path
+
+from app.history_store import save_observations
 
 ROOT = Path(__file__).resolve().parent.parent
 
 INPUT_FILE = ROOT / "data" / "raw" / "apify_output.json"
-OUTPUT_FILE = ROOT / "data" / "processed" / "price_history.json"
+
+ASIN_IN_URL = re.compile(r"/(?:dp|gp/product)/([A-Z0-9]{10})")
+
+
+def asin_from_url(*urls):
+    for url in urls:
+        match = ASIN_IN_URL.search(url or "")
+        if match:
+            return match.group(1)
+    return None
 
 
 def normalize_product(product):
@@ -23,6 +35,14 @@ def normalize_product(product):
     if price is None or not timestamp:
         return None
 
+    # The Apify output has no ASIN field, so read it from the URL. This is the
+    # same ID the extension sends, so scraped history and /predict line up.
+    product_id = details.get("asin") or asin_from_url(
+        product.get("url"), product.get("inputUrl")
+    )
+    if not product_id:
+        return None
+
     currency_symbol = offers.get("priceCurrency")
     marketplace = product.get("marketplace", "")
 
@@ -32,20 +52,22 @@ def normalize_product(product):
         currency = currency_symbol
 
     return {
-        "product_id": details.get("asin"),
+        "product_id": product_id,
         "title": product.get("name"),
         "url": product.get("url") or product.get("inputUrl"),
         "timestamp": timestamp,
         "price": float(price),
         "currency": currency,
         "in_stock": details.get("inStock"),
-        "source": "apify",
+        "source": "scraped",
         "data_type": "observed",
     }
 
 
-def main():
-    with INPUT_FILE.open(encoding="utf-8") as file:
+def main(input_file=None):
+    input_file = Path(input_file) if input_file else INPUT_FILE
+
+    with input_file.open(encoding="utf-8") as file:
         products = json.load(file)
 
     normalized = []
@@ -56,14 +78,13 @@ def main():
         if record is not None:
             normalized.append(record)
 
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    with OUTPUT_FILE.open("w", encoding="utf-8") as file:
-        json.dump(normalized, file, indent=2, ensure_ascii=False)
+    # APPEND to the history file instead of overwriting it, so every scrape
+    # adds a data point and old ones are never lost.
+    added, total = save_observations(normalized)
 
     print(f"Input records: {len(products)}")
     print(f"Normalized records: {len(normalized)}")
-    print(f"Saved to: {OUTPUT_FILE}")
+    print(f"New rows added to history: {added} (history now has {total})")
 
     for record in normalized:
         print(
@@ -73,4 +94,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else None)
