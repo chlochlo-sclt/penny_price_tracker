@@ -1,8 +1,17 @@
+
+# macOS
+.DS_Store
+
+# Secrets — never commit API keys or environment variables
+.env
+
+# Python
 .venv/
+venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.env
-.DS_Store
+
+# Editors
 .vscode/
-.env
+.idea/

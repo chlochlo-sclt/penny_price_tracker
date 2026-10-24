@@ -1,0 +1,12 @@
+{
+  "recommendation": "buy_now",
+  "p_drop": 0.14,
+  "expected_drop_pct": 1.5,
+  "expected_drop_usd": 1.8,
+  "interval_low_usd": 116.99,
+  "interval_high_usd": 121.99,
+  "confidence": "high",
+  "best_day": null,
+  "explanation": "The current price is near its 90-day low, and big drops are unlikely in the next month.",
+  "data_source": "real"
+}

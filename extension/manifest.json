@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "[placeholder]",
+  "version": "0.1.0",
+  "description": "Tells Amazon shoppers whether to buy now or wait, based on a price-drop forecast.",
+  "permissions": ["storage"],
+  "action": {
+    "default_title": "[placeholder]",
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.amazon.com/*"],
+      "js": [
+        "content/utils.js",
+        "content/extractors/generic.js",
+        "content/extractors/amazon.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

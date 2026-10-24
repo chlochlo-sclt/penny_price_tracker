@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>[placeholder]</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="popup-header">
+    <h1 class="popup-title">[placeholder]</h1>
+  </header>
+
+  <main class="popup-main">
+    <!-- The detected product. Shown above every state that has a product. -->
+    <section class="product-summary" id="product-summary" aria-label="Detected product" hidden>
+      <p class="product-summary-title" id="product-title"></p>
+      <p class="product-summary-price" id="product-price"></p>
+    </section>
+
+    <!-- Exactly one of the three views below is visible at a time (render.js). -->
+    <section class="status-view status-view--loading" id="loading-view" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="status-view-text" id="loading-text">Loading…</p>
+    </section>
+
+    <section class="status-view" id="message-view" aria-live="polite" hidden>
+      <h2 class="status-view-title" id="message-title"></h2>
+      <p class="status-view-text" id="message-text"></p>
+    </section>
+
+    <article class="recommendation-card" id="recommendation-card" hidden>
+      <p class="recommendation-notice" id="low-confidence-notice" hidden>
+        Not enough price history for a confident call yet.
+      </p>
+      <h2 class="recommendation-verdict" id="verdict"></h2>
+      <p class="recommendation-probability">
+        <span class="recommendation-probability-value" id="p-drop"></span>
+        chance the price drops
+      </p>
+
+      <dl class="recommendation-details">
+        <div class="recommendation-detail">
+          <dt class="recommendation-detail-label">Expected savings</dt>
+          <dd class="recommendation-detail-value" id="expected-savings"></dd>
+        </div>
+        <div class="recommendation-detail">
+          <dt class="recommendation-detail-label">Likely price range</dt>
+          <dd class="recommendation-detail-value" id="price-interval"></dd>
+        </div>
+        <div class="recommendation-detail">
+          <dt class="recommendation-detail-label">Confidence</dt>
+          <dd class="recommendation-detail-value">
+            <span class="confidence-badge" id="confidence"></span>
+          </dd>
+        </div>
+        <div class="recommendation-detail" id="best-day-row">
+          <dt class="recommendation-detail-label">Best day to buy</dt>
+          <dd class="recommendation-detail-value" id="best-day"></dd>
+        </div>
+      </dl>
+
+      <p class="recommendation-explanation" id="explanation"></p>
+      <p class="data-source-label" id="simulated-label" hidden>Simulated data</p>
+    </article>
+  </main>
+
+  <!-- Only shown for unpacked (developer) installs; see popup.js. -->
+  <details class="dev-panel" id="dev-panel" hidden>
+    <summary class="dev-panel-summary">Dev tools</summary>
+    <label class="dev-panel-field">
+      <span class="dev-panel-label">Product</span>
+      <select class="dev-panel-select" id="dev-detection">
+        <option value="live">Live: ask the current tab</option>
+        <option value="ok">Mock: product found</option>
+        <option value="price_not_found">Mock: price not found</option>
+        <option value="unavailable">Mock: item unavailable</option>
+        <option value="not_product_page">Mock: not a product page</option>
+        <option value="no_content_script">Mock: unsupported site</option>
+        <option value="error">Mock: detection error</option>
+      </select>
+    </label>
+    <label class="dev-panel-field">
+      <span class="dev-panel-label">Prediction</span>
+      <select class="dev-panel-select" id="dev-prediction">
+        <option value="predict.json">predict.json</option>
+        <option value="predict_wait.json">predict_wait.json</option>
+        <option value="predict_buy_now.json">predict_buy_now.json</option>
+        <option value="predict_low_confidence.json">predict_low_confidence.json</option>
+        <option value="__loading">Never finishes (loading)</option>
+        <option value="__error">Request fails (error)</option>
+      </select>
+    </label>
+  </details>
+
+  <!-- MV3 blocks inline scripts. Order matters: popup.js uses the other two. -->
+  <script src="api.js"></script>
+  <script src="render.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
