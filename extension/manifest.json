@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "[placeholder]",
+  "name": "penny",
   "version": "0.1.0",
   "description": "Tells Amazon shoppers whether to buy now or wait, based on a price-drop forecast.",
   "icons": {
@@ -12,21 +12,24 @@
   "permissions": [
     "storage",
     "alarms",
-    "notifications"
+    "notifications",
+    "sidePanel"
   ],
   "host_permissions": [
     "http://127.0.0.1:8000/*",
     "http://localhost:8000/*"
   ],
   "action": {
-    "default_title": "[placeholder]",
-    "default_popup": "popup/popup.html",
+    "default_title": "penny",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",
       "48": "icons/icon-48.png",
       "128": "icons/icon-128.png"
     }
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
   },
   "background": {
     "service_worker": "background/background.js"

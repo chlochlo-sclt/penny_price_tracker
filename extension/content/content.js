@@ -1,7 +1,7 @@
 // Entry point for the content script. manifest.json loads utils.js and the
 // extractors first, so by the time this runs they're on ProductDetect.
 //
-// Detection result shape (sent to the popup):
+// Detection result shape (sent to the side panel):
 //   { status: "ok", product }
 //   { status: "price_not_found", product, reason: "unavailable" | "no_price_element" }
 //   { status: "not_product_page", product: null }
@@ -31,21 +31,46 @@
     try {
       return extractor.extract(document, location.href);
     } catch (err) {
-      console.error(`[placeholder] ${extractor.name} extractor failed`, err);
+      console.error(`penny ${extractor.name} extractor failed`, err);
       return { status: "error", product: null, reason: String(err?.message ?? err) };
     }
   }
 
-  console.log("[placeholder] loaded", location.href);
+  console.log("penny loaded", location.href);
   const initial = detectProduct();
-  console.log(`[placeholder] detection: ${initial.status}`, initial);
+  console.log(`penny detection: ${initial.status}`, initial);
 
-  // The popup sends { type: "GET_PRODUCT" } when it opens. Replying with
-  // sendResponse synchronously means we don't need to `return true`.
+  // "Buy now" in the side panel: bring the page's own buy button into view.
+  function scrollToBuyButton() {
+    const button = document.querySelector("#buy-now-button, #add-to-cart-button, #submit\\.add-to-cart");
+    if (!button) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return "top";
+    }
+    button.scrollIntoView({ block: "center", behavior: "smooth" });
+    button.focus({ preventScroll: true });
+    return button.id || "buy button";
+  }
+
+  // Messages from the side panel. Replying with sendResponse synchronously
+  // means we don't need to `return true`.
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message?.type !== "GET_PRODUCT") return;
-    const result = detectProduct();
-    console.log(`[placeholder] detection for popup: ${result.status}`, result);
-    sendResponse(result);
+    if (message?.type === "GET_PRODUCT") {
+      const result = detectProduct();
+      console.log(`penny detection for side panel: ${result.status}`, result);
+      sendResponse(result);
+    } else if (message?.type === "SCROLL_TO_BUY") {
+      sendResponse({ scrolledTo: scrollToBuyButton() });
+    }
   });
+
+  // Tell an open side panel that this page is ready, or that Amazon changed
+  // the URL without a full reload (e.g. picking another color or size). The
+  // panel ignores it unless this is its window's active tab. When no panel
+  // is open there's no receiver, so the error is expected and ignored.
+  function announcePageChanged() {
+    chrome.runtime.sendMessage({ type: "PAGE_CHANGED", url: location.href }).catch(() => {});
+  }
+  announcePageChanged();
+  globalThis.navigation?.addEventListener("navigatesuccess", announcePageChanged);
 })();

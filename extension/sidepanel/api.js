@@ -1,28 +1,55 @@
-// Data layer: where the popup's data comes from. Nothing here touches the
-// DOM; render.js does all the drawing and popup.js connects the two.
+// Data layer: where the side panel's data comes from. Nothing here touches the
+// DOM; render.js does all the drawing and sidepanel.js connects the two.
 // API_BASE_URL and REQUEST_TIMEOUT_MS live in shared/config.js.
+
+/** The tab the side panel is showing: the active tab in the panel's own window. */
+async function getActiveTab() {
+  if (!globalThis.chrome?.tabs) return null;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tab ?? null;
+}
 
 /**
  * Asks the active tab's content script what product it sees.
- * Always resolves with a detection result (see content/content.js), plus
- * status "no_content_script" when nothing on the tab answered.
+ * Always resolves with a detection result (see content/content.js), plus:
+ *   status "page_loading"       nothing answered yet but the tab is still
+ *                               loading; the content script announces itself
+ *                               when ready and the panel re-runs (sidepanel.js)
+ *   status "no_content_script"  nothing on the tab answered
  */
 async function getDetection() {
-  if (!globalThis.chrome?.tabs) {
-    // Popup opened as a plain web page (e.g. for previewing), not as the extension.
-    return { status: "no_content_script", product: null };
-  }
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  // No chrome.tabs: the panel was opened as a plain web page (e.g. for previewing).
+  const tab = await getActiveTab();
   if (!tab?.id) return { status: "no_content_script", product: null };
 
+  // Ask first, whatever the tab's status: Amazon pages report "loading" for
+  // a long time (ads, iframes) after the content script is already ready.
+  // Right after a load finishes it may not be listening yet, so retry once.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const result = await chrome.tabs.sendMessage(tab.id, { type: "GET_PRODUCT" });
+      if (result) return result;
+    } catch {
+      // Chrome rejects with "Receiving end does not exist" when no content
+      // script is listening: a non-Amazon site, a chrome:// page, a page
+      // that's still loading, or an Amazon tab opened before the extension
+      // was (re)loaded.
+    }
+    const latest = await chrome.tabs.get(tab.id).catch(() => null);
+    if (latest?.status === "loading") return { status: "page_loading", product: null };
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  return { status: "no_content_script", product: null };
+}
+
+/** "Buy now": asks the page to scroll its own buy button into view. */
+async function scrollPageToBuyButton() {
+  const tab = await getActiveTab();
+  if (!tab?.id) return null;
   try {
-    const result = await chrome.tabs.sendMessage(tab.id, { type: "GET_PRODUCT" });
-    return result ?? { status: "no_content_script", product: null };
+    return await chrome.tabs.sendMessage(tab.id, { type: "SCROLL_TO_BUY" });
   } catch {
-    // Chrome rejects with "Receiving end does not exist" when no content
-    // script is listening: a non-Amazon site, a chrome:// page, or an Amazon
-    // tab that was opened before the extension was installed or reloaded.
-    return { status: "no_content_script", product: null };
+    return null;
   }
 }
 
@@ -40,7 +67,7 @@ function getPreferences({ min_savings_pct, deadline_days }) {
 }
 
 /**
- * Thrown by getPrediction. `kind` tells the popup which message to show:
+ * Thrown by getPrediction. `kind` tells the side panel which message to show:
  * "timeout" | "network" | "rejected" (422) | "http" (other non-2xx) |
  * "invalid_json" | "cancelled" (a newer request replaced this one).
  * `detail` is the backend's own error message, when it sent one.

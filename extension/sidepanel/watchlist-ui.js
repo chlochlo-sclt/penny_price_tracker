@@ -1,4 +1,4 @@
-// The popup side of "Wait & watch": the Buy now / Wait & watch buttons on
+// The side-panel half of "Wait & watch": the Buy now / Wait & watch buttons on
 // the card, the "Watching" list, and the dev-tools buttons that simulate a
 // price drop or an approaching deadline. Storage lives in
 // shared/watchlist.js; notifications come from background/background.js.
@@ -130,7 +130,9 @@ const WatchlistUI = (() => {
     getProduct = options.getProduct;
     getGoal = options.getGoal;
 
-    $("buy-now-button").addEventListener("click", () => window.close()); // the user buys on the page
+    // The panel stays open, so "Buy now" points the user at the page's own
+    // Buy Now / Add to Cart button (see SCROLL_TO_BUY in content.js).
+    $("buy-now-button").addEventListener("click", () => scrollPageToBuyButton());
     $("watch-button").addEventListener("click", onWatchClick);
     $("dev-simulate-drop").addEventListener("click", () => simulate("drop"));
     $("dev-simulate-deadline").addEventListener("click", () => simulate("deadline"));

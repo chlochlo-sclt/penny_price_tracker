@@ -1,5 +1,5 @@
-// Settings shared by the popup and the background worker. Both load this as
-// a classic script (popup.html <script>, background.js importScripts), so
+// Settings shared by the side panel and the background worker. Both load this as
+// a classic script (sidepanel.html <script>, background.js importScripts), so
 // these constants are globals in each.
 
 // The backend (app/main.py). Must also be listed in host_permissions in

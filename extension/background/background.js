@@ -1,10 +1,18 @@
-// Background service worker: checks watched products on a timer and shows
-// price-drop / deadline notifications.
+// Background service worker: opens the side panel from the toolbar icon,
+// checks watched products on a timer, and shows price-drop / deadline
+// notifications.
 //
 // MV3 service workers are stopped when idle and restarted for each event,
 // so nothing here is kept in memory between events: every handler reads the
 // watches from storage, and the alarm (not a setInterval) drives the checks.
 importScripts("../shared/config.js", "../shared/storage.js", "../shared/dates.js", "../shared/watchlist.js");
+
+// Clicking the toolbar icon opens the side panel (manifest.json has no
+// popup). Chrome remembers this setting, but setting it on every worker
+// start keeps it right after updates.
+chrome.sidePanel
+  .setPanelBehavior({ openPanelOnActionClick: true })
+  .catch((err) => console.error("penny couldn't set side panel behavior", err));
 
 const CHECK_ALARM = "check-watches";
 const CHECK_EVERY_MINUTES = 30;
@@ -76,7 +84,7 @@ async function checkAllWatches() {
     try {
       await evaluateWatch(watch, await getCurrentPrice(watch), now);
     } catch (err) {
-      console.error(`[placeholder] checking ${watch.product_id} failed`, err);
+      console.error(`penny checking ${watch.product_id} failed`, err);
     }
   }
 }
@@ -149,7 +157,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === CHECK_ALARM) checkAllWatches();
 });
 
-// ---- Messages from the popup ----------------------------------------------
+// ---- Messages from the side panel ----------------------------------------
 
 /**
  * Dev tools: fake the conditions for one watched item and run evaluateWatch,

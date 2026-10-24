@@ -1,0 +1,12 @@
+{
+  "recommendation": "buy_now",
+  "p_drop": 0.0,
+  "expected_drop_pct": 0.0,
+  "expected_drop_usd": 0.0,
+  "interval_low_usd": 119.99,
+  "interval_high_usd": 119.99,
+  "confidence": "low",
+  "best_day": null,
+  "explanation": "We only have 9 days of price history for this item, so we can't forecast a drop. Treat this as a rough call.",
+  "data_source": "real"
+}

@@ -7674,5 +7674,2560 @@
     "product_id": "B0032RMX3U",
     "source": "simulated",
     "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-24T00:00:00Z",
+    "price": 406.46,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-25T00:00:00Z",
+    "price": 407.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-26T00:00:00Z",
+    "price": 403.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-27T00:00:00Z",
+    "price": 400.76,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-28T00:00:00Z",
+    "price": 405.74,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-29T00:00:00Z",
+    "price": 408.62,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-30T00:00:00Z",
+    "price": 409.27,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-10-31T00:00:00Z",
+    "price": 410.93,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-01T00:00:00Z",
+    "price": 413.26,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-02T00:00:00Z",
+    "price": 408.88,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-03T00:00:00Z",
+    "price": 403.95,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-04T00:00:00Z",
+    "price": 407.2,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-05T00:00:00Z",
+    "price": 405.42,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-06T00:00:00Z",
+    "price": 409.07,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-07T00:00:00Z",
+    "price": 410.15,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-08T00:00:00Z",
+    "price": 413.03,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-09T00:00:00Z",
+    "price": 407.64,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-10T00:00:00Z",
+    "price": 401.05,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-11T00:00:00Z",
+    "price": 399.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-12T00:00:00Z",
+    "price": 401.28,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-13T00:00:00Z",
+    "price": 401.8,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-14T00:00:00Z",
+    "price": 404.9,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-15T00:00:00Z",
+    "price": 405.98,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-16T00:00:00Z",
+    "price": 401.35,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-17T00:00:00Z",
+    "price": 395.24,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-18T00:00:00Z",
+    "price": 398.37,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-19T00:00:00Z",
+    "price": 399.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-20T00:00:00Z",
+    "price": 323.6,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-21T00:00:00Z",
+    "price": 322.97,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-22T00:00:00Z",
+    "price": 324.61,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-23T00:00:00Z",
+    "price": 320.63,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-24T00:00:00Z",
+    "price": 317.82,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-25T00:00:00Z",
+    "price": 322.07,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-26T00:00:00Z",
+    "price": 322.82,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-27T00:00:00Z",
+    "price": 325.16,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-28T00:00:00Z",
+    "price": 325.08,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-29T00:00:00Z",
+    "price": 326.91,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-11-30T00:00:00Z",
+    "price": 320.69,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-01T00:00:00Z",
+    "price": 333.85,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-02T00:00:00Z",
+    "price": 333.63,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-03T00:00:00Z",
+    "price": 390.54,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-04T00:00:00Z",
+    "price": 393.17,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-05T00:00:00Z",
+    "price": 394.51,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-06T00:00:00Z",
+    "price": 395.31,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-07T00:00:00Z",
+    "price": 389.44,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-08T00:00:00Z",
+    "price": 383.88,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-09T00:00:00Z",
+    "price": 384.89,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-10T00:00:00Z",
+    "price": 385.63,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-11T00:00:00Z",
+    "price": 387.54,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-12T00:00:00Z",
+    "price": 389.27,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-13T00:00:00Z",
+    "price": 389.54,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-14T00:00:00Z",
+    "price": 385.78,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-15T00:00:00Z",
+    "price": 355.94,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-16T00:00:00Z",
+    "price": 357.6,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-17T00:00:00Z",
+    "price": 358.99,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-18T00:00:00Z",
+    "price": 360.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-19T00:00:00Z",
+    "price": 362.33,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-20T00:00:00Z",
+    "price": 363.25,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-21T00:00:00Z",
+    "price": 359.77,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-22T00:00:00Z",
+    "price": 356.95,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-23T00:00:00Z",
+    "price": 359.99,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-24T00:00:00Z",
+    "price": 360.17,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-25T00:00:00Z",
+    "price": 389.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-26T00:00:00Z",
+    "price": 388.89,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-27T00:00:00Z",
+    "price": 390.83,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-28T00:00:00Z",
+    "price": 386.24,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-29T00:00:00Z",
+    "price": 383.31,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-30T00:00:00Z",
+    "price": 383.88,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2025-12-31T00:00:00Z",
+    "price": 385.1,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-01T00:00:00Z",
+    "price": 386.76,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-02T00:00:00Z",
+    "price": 386.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-03T00:00:00Z",
+    "price": 343.46,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-04T00:00:00Z",
+    "price": 339.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-05T00:00:00Z",
+    "price": 336.89,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-06T00:00:00Z",
+    "price": 382.87,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-07T00:00:00Z",
+    "price": 384.29,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-08T00:00:00Z",
+    "price": 386.27,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-09T00:00:00Z",
+    "price": 384.72,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-10T00:00:00Z",
+    "price": 387.38,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-11T00:00:00Z",
+    "price": 382.75,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-12T00:00:00Z",
+    "price": 376.66,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-13T00:00:00Z",
+    "price": 379.18,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-14T00:00:00Z",
+    "price": 385.21,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-15T00:00:00Z",
+    "price": 389.17,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-16T00:00:00Z",
+    "price": 392.54,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-17T00:00:00Z",
+    "price": 394.2,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-18T00:00:00Z",
+    "price": 388.61,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-19T00:00:00Z",
+    "price": 384.1,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-20T00:00:00Z",
+    "price": 386.31,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-21T00:00:00Z",
+    "price": 388.16,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-22T00:00:00Z",
+    "price": 389.57,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-23T00:00:00Z",
+    "price": 390.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-24T00:00:00Z",
+    "price": 391.19,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-25T00:00:00Z",
+    "price": 388.66,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-26T00:00:00Z",
+    "price": 386.43,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-27T00:00:00Z",
+    "price": 390.32,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-28T00:00:00Z",
+    "price": 388.71,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-29T00:00:00Z",
+    "price": 391.56,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-30T00:00:00Z",
+    "price": 392.38,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-01-31T00:00:00Z",
+    "price": 395.46,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-01T00:00:00Z",
+    "price": 388.82,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-02T00:00:00Z",
+    "price": 384.95,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-03T00:00:00Z",
+    "price": 388.99,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-04T00:00:00Z",
+    "price": 392.94,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-05T00:00:00Z",
+    "price": 395.69,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-06T00:00:00Z",
+    "price": 333.81,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-07T00:00:00Z",
+    "price": 333.59,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-08T00:00:00Z",
+    "price": 327.8,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-09T00:00:00Z",
+    "price": 323.11,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-10T00:00:00Z",
+    "price": 388.78,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-11T00:00:00Z",
+    "price": 391.61,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-12T00:00:00Z",
+    "price": 392.71,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-13T00:00:00Z",
+    "price": 393.76,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-14T00:00:00Z",
+    "price": 396.75,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-15T00:00:00Z",
+    "price": 393.88,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-16T00:00:00Z",
+    "price": 386.96,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-17T00:00:00Z",
+    "price": 389.69,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-18T00:00:00Z",
+    "price": 388.01,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-19T00:00:00Z",
+    "price": 393.62,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-20T00:00:00Z",
+    "price": 396.85,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-21T00:00:00Z",
+    "price": 400.52,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-22T00:00:00Z",
+    "price": 395.66,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-23T00:00:00Z",
+    "price": 392.51,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-24T00:00:00Z",
+    "price": 394.26,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-25T00:00:00Z",
+    "price": 395.39,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-26T00:00:00Z",
+    "price": 396.31,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-27T00:00:00Z",
+    "price": 397.39,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-02-28T00:00:00Z",
+    "price": 400.16,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-01T00:00:00Z",
+    "price": 395.61,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-02T00:00:00Z",
+    "price": 392.15,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-03T00:00:00Z",
+    "price": 393.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-04T00:00:00Z",
+    "price": 394.83,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-05T00:00:00Z",
+    "price": 397.19,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-06T00:00:00Z",
+    "price": 398.94,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-07T00:00:00Z",
+    "price": 399.82,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-08T00:00:00Z",
+    "price": 327.57,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-09T00:00:00Z",
+    "price": 323.91,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-10T00:00:00Z",
+    "price": 326.02,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-11T00:00:00Z",
+    "price": 329.68,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-12T00:00:00Z",
+    "price": 399.19,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-13T00:00:00Z",
+    "price": 401.41,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-14T00:00:00Z",
+    "price": 405.11,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-15T00:00:00Z",
+    "price": 399.79,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-16T00:00:00Z",
+    "price": 398.27,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-17T00:00:00Z",
+    "price": 397.88,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-18T00:00:00Z",
+    "price": 398.98,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-19T00:00:00Z",
+    "price": 403.63,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-20T00:00:00Z",
+    "price": 403.08,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-21T00:00:00Z",
+    "price": 405.05,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-22T00:00:00Z",
+    "price": 400.49,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-23T00:00:00Z",
+    "price": 396.77,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-24T00:00:00Z",
+    "price": 399.76,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-25T00:00:00Z",
+    "price": 400.23,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-26T00:00:00Z",
+    "price": 403.32,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-27T00:00:00Z",
+    "price": 403.3,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-28T00:00:00Z",
+    "price": 404.75,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-29T00:00:00Z",
+    "price": 396.7,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-30T00:00:00Z",
+    "price": 393.03,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-03-31T00:00:00Z",
+    "price": 398.0,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-01T00:00:00Z",
+    "price": 401.08,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-02T00:00:00Z",
+    "price": 403.64,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-03T00:00:00Z",
+    "price": 401.75,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-04T00:00:00Z",
+    "price": 404.32,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-05T00:00:00Z",
+    "price": 396.29,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-06T00:00:00Z",
+    "price": 392.6,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-07T00:00:00Z",
+    "price": 397.99,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-08T00:00:00Z",
+    "price": 400.07,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-09T00:00:00Z",
+    "price": 400.87,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "price": 404.99,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-11T00:00:00Z",
+    "price": 407.57,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-12T00:00:00Z",
+    "price": 401.83,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-13T00:00:00Z",
+    "price": 394.92,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-14T00:00:00Z",
+    "price": 397.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-15T00:00:00Z",
+    "price": 397.58,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-16T00:00:00Z",
+    "price": 397.53,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-17T00:00:00Z",
+    "price": 398.29,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-18T00:00:00Z",
+    "price": 400.41,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-19T00:00:00Z",
+    "price": 397.52,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-20T00:00:00Z",
+    "price": 394.0,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-21T00:00:00Z",
+    "price": 395.29,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-22T00:00:00Z",
+    "price": 398.34,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-23T00:00:00Z",
+    "price": 402.69,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-24T00:00:00Z",
+    "price": 404.52,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-25T00:00:00Z",
+    "price": 406.88,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-26T00:00:00Z",
+    "price": 402.26,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-27T00:00:00Z",
+    "price": 398.68,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-28T00:00:00Z",
+    "price": 401.04,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-29T00:00:00Z",
+    "price": 399.52,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-04-30T00:00:00Z",
+    "price": 399.09,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-01T00:00:00Z",
+    "price": 399.82,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-02T00:00:00Z",
+    "price": 402.19,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-03T00:00:00Z",
+    "price": 399.29,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-04T00:00:00Z",
+    "price": 395.82,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-05T00:00:00Z",
+    "price": 400.09,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-06T00:00:00Z",
+    "price": 401.06,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-07T00:00:00Z",
+    "price": 404.1,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-08T00:00:00Z",
+    "price": 406.22,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-09T00:00:00Z",
+    "price": 410.33,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-10T00:00:00Z",
+    "price": 407.62,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-11T00:00:00Z",
+    "price": 403.06,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-12T00:00:00Z",
+    "price": 406.98,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-13T00:00:00Z",
+    "price": 408.72,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-14T00:00:00Z",
+    "price": 410.44,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-15T00:00:00Z",
+    "price": 412.57,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-16T00:00:00Z",
+    "price": 414.19,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-17T00:00:00Z",
+    "price": 409.49,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-18T00:00:00Z",
+    "price": 404.22,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-19T00:00:00Z",
+    "price": 406.17,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-20T00:00:00Z",
+    "price": 404.86,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-21T00:00:00Z",
+    "price": 405.93,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-22T00:00:00Z",
+    "price": 407.52,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-23T00:00:00Z",
+    "price": 409.38,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-24T00:00:00Z",
+    "price": 406.88,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-25T00:00:00Z",
+    "price": 402.48,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-26T00:00:00Z",
+    "price": 406.12,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-27T00:00:00Z",
+    "price": 405.23,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-28T00:00:00Z",
+    "price": 408.22,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-29T00:00:00Z",
+    "price": 410.69,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-30T00:00:00Z",
+    "price": 413.32,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-05-31T00:00:00Z",
+    "price": 404.99,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-01T00:00:00Z",
+    "price": 399.84,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-02T00:00:00Z",
+    "price": 399.8,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-03T00:00:00Z",
+    "price": 400.51,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-04T00:00:00Z",
+    "price": 401.73,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-05T00:00:00Z",
+    "price": 405.65,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-06T00:00:00Z",
+    "price": 410.75,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-07T00:00:00Z",
+    "price": 407.01,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-08T00:00:00Z",
+    "price": 401.9,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-09T00:00:00Z",
+    "price": 407.0,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-10T00:00:00Z",
+    "price": 408.97,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-11T00:00:00Z",
+    "price": 410.52,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-12T00:00:00Z",
+    "price": 410.21,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-13T00:00:00Z",
+    "price": 413.2,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-14T00:00:00Z",
+    "price": 406.32,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-15T00:00:00Z",
+    "price": 404.71,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-16T00:00:00Z",
+    "price": 407.96,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-17T00:00:00Z",
+    "price": 408.81,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-18T00:00:00Z",
+    "price": 410.41,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-19T00:00:00Z",
+    "price": 411.65,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-20T00:00:00Z",
+    "price": 409.68,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-21T00:00:00Z",
+    "price": 406.44,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-22T00:00:00Z",
+    "price": 402.83,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-23T00:00:00Z",
+    "price": 402.42,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-24T00:00:00Z",
+    "price": 403.83,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-25T00:00:00Z",
+    "price": 407.86,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-26T00:00:00Z",
+    "price": 410.31,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-27T00:00:00Z",
+    "price": 413.77,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-28T00:00:00Z",
+    "price": 405.26,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-29T00:00:00Z",
+    "price": 400.69,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-06-30T00:00:00Z",
+    "price": 404.71,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-01T00:00:00Z",
+    "price": 405.95,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-02T00:00:00Z",
+    "price": 407.77,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-03T00:00:00Z",
+    "price": 408.56,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-04T00:00:00Z",
+    "price": 412.6,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-05T00:00:00Z",
+    "price": 405.66,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-06T00:00:00Z",
+    "price": 400.62,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-07T00:00:00Z",
+    "price": 405.2,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-08T00:00:00Z",
+    "price": 407.66,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-09T00:00:00Z",
+    "price": 410.39,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-10T00:00:00Z",
+    "price": 352.41,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-11T00:00:00Z",
+    "price": 353.6,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-12T00:00:00Z",
+    "price": 349.07,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-13T00:00:00Z",
+    "price": 345.93,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-14T00:00:00Z",
+    "price": 349.46,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-15T00:00:00Z",
+    "price": 349.03,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-16T00:00:00Z",
+    "price": 351.76,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-17T00:00:00Z",
+    "price": 335.84,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-18T00:00:00Z",
+    "price": 334.47,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-19T00:00:00Z",
+    "price": 404.08,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-20T00:00:00Z",
+    "price": 401.47,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-21T00:00:00Z",
+    "price": 404.8,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-22T00:00:00Z",
+    "price": 404.98,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-23T00:00:00Z",
+    "price": 406.78,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-24T00:00:00Z",
+    "price": 406.64,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-25T00:00:00Z",
+    "price": 407.33,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-26T00:00:00Z",
+    "price": 403.4,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-27T00:00:00Z",
+    "price": 401.18,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-28T00:00:00Z",
+    "price": 404.37,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-29T00:00:00Z",
+    "price": 406.6,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-30T00:00:00Z",
+    "price": 407.41,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-07-31T00:00:00Z",
+    "price": 407.48,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-01T00:00:00Z",
+    "price": 397.81,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-02T00:00:00Z",
+    "price": 394.74,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-03T00:00:00Z",
+    "price": 390.78,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-04T00:00:00Z",
+    "price": 394.17,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-05T00:00:00Z",
+    "price": 395.62,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-06T00:00:00Z",
+    "price": 396.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-07T00:00:00Z",
+    "price": 396.8,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-08T00:00:00Z",
+    "price": 398.16,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-09T00:00:00Z",
+    "price": 393.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-10T00:00:00Z",
+    "price": 390.67,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-11T00:00:00Z",
+    "price": 392.9,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-12T00:00:00Z",
+    "price": 391.26,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-13T00:00:00Z",
+    "price": 391.84,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-14T00:00:00Z",
+    "price": 392.66,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-15T00:00:00Z",
+    "price": 397.17,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-16T00:00:00Z",
+    "price": 392.31,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-17T00:00:00Z",
+    "price": 385.42,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-18T00:00:00Z",
+    "price": 391.11,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-19T00:00:00Z",
+    "price": 393.51,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-20T00:00:00Z",
+    "price": 398.06,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-21T00:00:00Z",
+    "price": 410.49,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-22T00:00:00Z",
+    "price": 408.97,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-23T00:00:00Z",
+    "price": 400.92,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-24T00:00:00Z",
+    "price": 396.55,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-25T00:00:00Z",
+    "price": 401.57,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-26T00:00:00Z",
+    "price": 402.6,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-27T00:00:00Z",
+    "price": 405.04,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-28T00:00:00Z",
+    "price": 405.48,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-29T00:00:00Z",
+    "price": 407.01,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-30T00:00:00Z",
+    "price": 400.37,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-08-31T00:00:00Z",
+    "price": 395.57,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-01T00:00:00Z",
+    "price": 395.65,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-02T00:00:00Z",
+    "price": 398.1,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-03T00:00:00Z",
+    "price": 397.51,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-04T00:00:00Z",
+    "price": 399.95,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-05T00:00:00Z",
+    "price": 399.72,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-06T00:00:00Z",
+    "price": 396.78,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-07T00:00:00Z",
+    "price": 391.97,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-08T00:00:00Z",
+    "price": 397.41,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-09T00:00:00Z",
+    "price": 397.89,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-10T00:00:00Z",
+    "price": 398.43,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-11T00:00:00Z",
+    "price": 398.63,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-12T00:00:00Z",
+    "price": 399.1,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-13T00:00:00Z",
+    "price": 392.21,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-14T00:00:00Z",
+    "price": 388.01,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-15T00:00:00Z",
+    "price": 389.04,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-16T00:00:00Z",
+    "price": 388.65,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-17T00:00:00Z",
+    "price": 392.15,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-18T00:00:00Z",
+    "price": 392.47,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-19T00:00:00Z",
+    "price": 360.62,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-20T00:00:00Z",
+    "price": 354.84,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-21T00:00:00Z",
+    "price": 383.71,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-22T00:00:00Z",
+    "price": 385.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-23T00:00:00Z",
+    "price": 388.28,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-24T00:00:00Z",
+    "price": 389.58,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-25T00:00:00Z",
+    "price": 392.37,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-26T00:00:00Z",
+    "price": 395.84,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-27T00:00:00Z",
+    "price": 389.48,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-28T00:00:00Z",
+    "price": 386.81,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-29T00:00:00Z",
+    "price": 390.22,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-09-30T00:00:00Z",
+    "price": 390.55,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-01T00:00:00Z",
+    "price": 392.61,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-02T00:00:00Z",
+    "price": 353.8,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-03T00:00:00Z",
+    "price": 355.71,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-04T00:00:00Z",
+    "price": 394.73,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-05T00:00:00Z",
+    "price": 392.12,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-06T00:00:00Z",
+    "price": 395.81,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-07T00:00:00Z",
+    "price": 399.43,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-08T00:00:00Z",
+    "price": 400.19,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-09T00:00:00Z",
+    "price": 400.76,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-10T00:00:00Z",
+    "price": 402.93,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-11T00:00:00Z",
+    "price": 396.97,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-12T00:00:00Z",
+    "price": 392.02,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-13T00:00:00Z",
+    "price": 394.58,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-14T00:00:00Z",
+    "price": 396.65,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-15T00:00:00Z",
+    "price": 400.1,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-16T00:00:00Z",
+    "price": 321.98,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-17T00:00:00Z",
+    "price": 324.0,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-18T00:00:00Z",
+    "price": 399.51,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-19T00:00:00Z",
+    "price": 397.39,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-20T00:00:00Z",
+    "price": 396.45,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-21T00:00:00Z",
+    "price": 396.98,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-22T00:00:00Z",
+    "price": 400.17,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
+  },
+  {
+    "timestamp": "2026-10-23T00:00:00Z",
+    "price": 399.0,
+    "product_id": "B0FKQSXHN6",
+    "source": "simulated",
+    "currency": "USD"
   }
 ]

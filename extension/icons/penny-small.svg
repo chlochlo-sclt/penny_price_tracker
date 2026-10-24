@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <!-- penny icon for 16px (toolbar): same coin as penny.svg with fewer
+       details, drawn on the 16px pixel grid so it stays crisp. -->
+  <circle cx="8" cy="8" r="7.25" fill="#c8692e" stroke="#5e2a0c" stroke-width="1.5"/>
+  <!-- lowercase "p" -->
+  <g fill="none" stroke="#fff3e6" stroke-width="1.75" stroke-linecap="round">
+    <line x1="6.25" y1="5.5" x2="6.25" y2="12"/>
+    <circle cx="8.4" cy="7.4" r="2"/>
+  </g>
+</svg>

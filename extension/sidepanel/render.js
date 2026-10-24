@@ -1,6 +1,6 @@
 // Rendering layer: turns data into what's on screen. These functions only
 // fill in text, toggle the `hidden` attribute and swap CSS classes on the
-// markup in popup.html. All visual styling stays in popup.css.
+// markup in sidepanel.html. All visual styling stays in sidepanel.css.
 
 const $ = (id) => document.getElementById(id);
 
@@ -79,7 +79,9 @@ function renderLoading(text) {
   showView("loading-view");
 }
 
-// Copy for every non-"ok" state. `tone` picks a CSS modifier class.
+// Copy for every non-"ok" state. `tone` picks a CSS modifier class; `retry`
+// shows a "Try again" button (the side panel stays open, so there's no
+// "reopen" to retry with).
 const MESSAGES = {
   not_product_page: {
     tone: "info",
@@ -89,7 +91,8 @@ const MESSAGES = {
   no_content_script: {
     tone: "info",
     title: "Open an Amazon product page",
-    text: "Recommendations work on amazon.com product pages. Already on one? Refresh the tab and try again.",
+    text: "Recommendations work on amazon.com product pages. Already on one? Refresh the tab.",
+    retry: true,
   },
   price_not_found: {
     tone: "warning",
@@ -105,21 +108,25 @@ const MESSAGES = {
     tone: "error",
     title: "Couldn't read this page",
     text: "Something went wrong reading the product. Try refreshing the page.",
+    retry: true,
   },
   prediction_error: {
     tone: "error",
     title: "Couldn't load a recommendation",
     text: "Something went wrong getting the forecast. Try again in a moment.",
+    retry: true,
   },
   backend_unreachable: {
     tone: "error",
     title: "Can't reach the forecast server",
-    text: "Make sure the backend is running on 127.0.0.1:8000, then reopen this popup.",
+    text: "Make sure the backend is running on 127.0.0.1:8000, then try again.",
+    retry: true,
   },
   backend_timeout: {
     tone: "error",
     title: "The forecast is taking too long",
     text: "The server didn't answer within 10 seconds. Try again in a moment.",
+    retry: true,
   },
   // `text` is replaced by the backend's own message when it sends one.
   backend_rejected: {
@@ -136,6 +143,7 @@ function renderMessage(key, text = null) {
   view.className = `status-view status-view--${message.tone}`;
   $("message-title").textContent = message.title;
   $("message-text").textContent = text || message.text;
+  $("message-retry").hidden = !message.retry;
   showView("message-view");
 }
 
@@ -151,6 +159,8 @@ function renderPredictionError(err) {
 function renderDetectionProblem(detection) {
   if (detection.status === "price_not_found") {
     renderMessage(detection.reason === "unavailable" ? "unavailable" : "price_not_found");
+  } else if (detection.status === "page_loading") {
+    renderLoading("Waiting for the page to finish loading…");
   } else if (detection.status === "error") {
     renderMessage("detection_error");
   } else {
@@ -170,21 +180,39 @@ const DATA_SOURCE_LABELS = {
 };
 
 /**
- * "72% chance you'll save at least 10% ($115) by Nov 27". p_drop is the
- * chance the price falls at least min_savings_pct below today's within
+ * The backend returns p_drop 0 with low confidence when it has too little
+ * history to forecast at all (enough_data = false in app/forecast.py).
+ */
+const isNotEnoughData = (prediction) => prediction.p_drop === 0 && prediction.confidence === "low";
+
+/**
+ * The hero line: "62% chance you'll save $115+ (10%) by Nov 27". p_drop is
+ * the chance the price falls at least min_savings_pct below today's within
  * deadline_days (see app/forecast.py), so the line describes the request
  * that produced this prediction, not wherever the sliders are now.
  */
-function resultLine(prediction, request) {
+function renderChanceLine(prediction, request) {
+  const line = $("recommendation-result");
   const { min_savings_pct: pct, deadline_days: days } = request.preferences;
-  // The backend returns p_drop 0 with low confidence when it has too little
-  // history to forecast at all (enough_data = false in app/forecast.py).
-  if (prediction.p_drop === 0 && prediction.confidence === "low") {
-    return "Not enough price history to estimate the chance of a drop yet.";
+  if (isNotEnoughData(prediction)) {
+    line.className = "chance-line chance-line--no-data";
+    line.textContent = "Not enough price history to estimate the chance of a drop yet.";
+    return;
   }
-  const savings = formatMoneyShort((request.price * pct) / 100, request.currency);
+  line.className = "chance-line";
+  const chance = document.createElement("span");
+  chance.className = "chance-line-pct";
+  chance.textContent = formatProbability(prediction.p_drop);
   const by = formatShortDate(addDays(startOfDay(), days));
-  return `${formatProbability(prediction.p_drop)} chance you'll save at least ${pct}% (${savings}) by ${by}`;
+  if (pct === 0) {
+    // At 0% any non-increase counts as a "drop" in the forecast.
+    line.replaceChildren(chance, ` chance it's at today's price or lower by ${by}`);
+    return;
+  }
+  const amount = document.createElement("strong");
+  amount.className = "chance-line-amount";
+  amount.textContent = `${formatMoneyShort((request.price * pct) / 100, request.currency)}+`;
+  line.replaceChildren(chance, " chance you'll save ", amount, ` (${pct}%) by ${by}`);
 }
 
 /** Shows or hides the subtle "Updating…" state while the sliders' request runs. */
@@ -211,6 +239,38 @@ function renderUpdateError(err) {
 }
 
 /**
+ * Likely best price before the deadline (interval_low_usd–interval_high_usd,
+ * the 10th–90th percentile of the lowest price; the high end is capped at
+ * today's price) as a bar, with today's price marked. Positions are passed
+ * to sidepanel.css as fractions of the bar's width.
+ */
+function renderPriceRange(prediction, request) {
+  const low = prediction.interval_low_usd;
+  const high = prediction.interval_high_usd;
+  const today = request.price;
+  const section = $("price-range");
+  const usable = [low, high, today].every(Number.isFinite) && high > low && !isNotEnoughData(prediction);
+  section.hidden = !usable;
+  if (!usable) return;
+
+  const min = Math.min(low, today);
+  const max = Math.max(high, today);
+  const position = (value) => ((value - min) / (max - min)).toFixed(4);
+  const bar = $("price-range-bar");
+  bar.style.setProperty("--band-start", position(low));
+  bar.style.setProperty("--band-end", position(high));
+  bar.style.setProperty("--today", position(today));
+  bar.setAttribute(
+    "aria-label",
+    `Likely best price between ${formatMoney(low)} and ${formatMoney(high)}; today's price is ${formatMoney(today)}`,
+  );
+
+  $("best-price-range").textContent = `${formatMoney(low)}–${formatMoney(high)}`;
+  $("price-range-low").textContent = formatMoney(low);
+  $("price-range-today-label").textContent = `Today ${formatMoney(today)}`;
+}
+
+/**
  * Fills in the card from a prediction (field names match mock/predict.json).
  * `request` is what was asked: { preferences, price, currency }.
  */
@@ -218,37 +278,37 @@ function renderRecommendation(prediction, request) {
   const isLowConfidence = prediction.confidence === "low";
   const verdict = VERDICT_LABELS[prediction.recommendation];
 
+  // The modifier class picks the verdict's color and icon (clock / check).
   const card = $("recommendation-card");
   card.className = "recommendation-card";
   card.classList.add(`recommendation-card--${prediction.recommendation.replace("_", "-")}`);
   card.classList.toggle("recommendation-card--low-confidence", isLowConfidence);
 
   // With low confidence the verdict is softened so it doesn't read as certain.
-  $("low-confidence-notice").hidden = !isLowConfidence;
+  // (No notice when there's no forecast at all: the chance line says so.)
+  $("low-confidence-notice").hidden = !isLowConfidence || isNotEnoughData(prediction);
   $("verdict").textContent = isLowConfidence ? `Leaning “${verdict}”` : verdict;
 
-  $("recommendation-result").textContent = resultLine(prediction, request);
+  renderChanceLine(prediction, request);
   renderUpdating(false);
-  $("expected-savings").textContent =
-    `${formatPercent(prediction.expected_drop_pct)} (${formatMoney(prediction.expected_drop_usd)})`;
-  // 10th–90th percentile of the lowest price before the shopper's deadline
-  // (the high end is capped at today's price). Not the same as savings.
-  $("best-price-range").textContent =
-    `${formatMoney(prediction.interval_low_usd)}–${formatMoney(prediction.interval_high_usd)}`;
 
+  // Trust row
   const confidence = $("confidence");
-  confidence.textContent = prediction.confidence;
-  confidence.className = `confidence-badge confidence-badge--${prediction.confidence}`;
-
-  $("best-day-row").hidden = !prediction.best_day;
-  if (prediction.best_day) $("best-day").textContent = formatDay(prediction.best_day);
-
-  $("explanation").textContent = prediction.explanation ?? "";
+  confidence.textContent = `${prediction.confidence[0].toUpperCase()}${prediction.confidence.slice(1)} confidence`;
+  confidence.className = `chip chip--confidence chip--confidence-${prediction.confidence}`;
   const sourceLabel = DATA_SOURCE_LABELS[prediction.data_source];
   const sourceEl = $("data-source-label");
   sourceEl.hidden = !sourceLabel;
   sourceEl.textContent = sourceLabel ?? "";
-  sourceEl.className = `data-source-label data-source-label--${prediction.data_source}`;
+  sourceEl.className = `chip chip--source chip--source-${prediction.data_source}`;
 
+  // "Why?" panel
+  $("explanation").textContent = prediction.explanation ?? "";
+  $("expected-savings").textContent =
+    `${formatPercent(prediction.expected_drop_pct)} (${formatMoney(prediction.expected_drop_usd)})`;
+  $("best-day-row").hidden = !prediction.best_day;
+  if (prediction.best_day) $("best-day").textContent = formatDay(prediction.best_day);
+
+  renderPriceRange(prediction, request);
   showView("recommendation-card");
 }

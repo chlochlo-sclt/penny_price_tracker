@@ -1,0 +1,969 @@
+/* penny side panel.
+   Class names follow block / block-element / block--modifier.
+   Every color is a custom property in the :root block below. */
+
+/* ==========================================================================
+   Colors
+   ========================================================================== */
+
+:root {
+  /* ---- Base ---- */
+  --color-text: #1f2328;
+  --color-muted: #57606a;        /* 6:1 on white, still above 4.5:1 on seasonal tints */
+  --color-border: #d0d7de;
+  --color-surface: #f6f8fa;
+  --color-background: #ffffff;
+  --color-error: #cf222e;
+  --color-info: #0969da;
+  --color-success: #1a7f37;
+  --color-focus: #0969da;
+  --color-track: #e4e8ec;        /* empty part of slider tracks and the price bar */
+
+  /* ---- Verdict (never seasonal; dark enough for 7:1+ on white) ---- */
+  --verdict-buy: #116329;
+  --verdict-wait: #0a3069;
+  --verdict-uncertain: #57606a;
+
+  /* ---- Action buttons ---- */
+  --button-buy-background: #116329;
+  --button-buy-text: #ffffff;
+
+  /* ---- Confidence chips (the word is always shown too) ---- */
+  --confidence-high: #1a7f37;
+  --confidence-medium: #9a6700;
+  --confidence-low: #cf222e;
+
+  /* ---- Price range bar ---- */
+  --range-band: #8c959f;
+  --range-today: #1f2328;
+
+  /* ---- Savings slider: coin palettes (theme.js blends copper → silver → gold).
+         -1 is the strong color (thumb, end of the fill), -2 the light one. ---- */
+  --coin-copper-1: #b0602a;
+  --coin-copper-2: #e7a774;
+  --coin-silver-1: #7d8691;
+  --coin-silver-2: #d4d9df;
+  --coin-gold-1: #b88a00;
+  --coin-gold-2: #f3d46b;
+
+  /* ---- Date slider: seasonal palettes (theme.js blends between them by the
+         deadline date; anchor dates are in SEASON_ANCHORS in theme.js). ---- */
+  --season-early-fall-1: #c2570c;        /* orange */
+  --season-early-fall-2: #e9a23b;        /* golden */
+  --season-halloween-1: #e05a00;         /* pumpkin orange */
+  --season-halloween-2: #5b2a86;         /* purple touch */
+  --season-november-1: #b7791f;          /* warm amber */
+  --season-november-2: #ecc15b;          /* gold */
+  --season-winter-1: #1f78b8;            /* winter blue (leans cyan so blends from amber pass through teal, not purple) */
+  --season-winter-2: #a7cdf3;            /* icy blue */
+  --season-christmas-1: #1f7a3f;         /* pine green */
+  --season-christmas-2: #c0392b;         /* holly red */
+  --season-new-year-1: #c0262d;          /* red */
+  --season-new-year-2: #7a1f3d;          /* burgundy */
+  --season-late-winter-1: #8c2346;       /* burgundy */
+  --season-late-winter-2: #d46a8c;       /* easing into pink */
+  --season-late-winter-pink-1: #cc3f78;
+  --season-late-winter-pink-2: #f4b2c8;
+  --season-spring-1: #de4f93;            /* cherry blossom */
+  --season-spring-2: #93d6a0;            /* pastel green */
+  --season-summer-1: #d9a400;            /* yellow */
+  --season-summer-2: #8fd0f0;            /* baby blue */
+
+  /* ---- Seasonal mesh background (whole panel) ----
+     Four large blurred blobs of the season's two colors over a pale base.
+     Raise --mesh-blob-strength for a bolder background; the glass cards
+     below keep text readable either way (contrast is checked per season). */
+  --mesh-blob-strength: 55%;
+  --mesh-base-strength: 14%;     /* how much accent-2 tints the base */
+  --mesh-base-white: #fbfbfd;
+  --mesh-blur: 48px;
+
+  /* ---- Frosted glass cards ---- */
+  --glass-background: rgb(255 255 255 / 0.74);
+  --glass-background-strong: rgb(255 255 255 / 0.88);   /* verdict card */
+  --glass-background-solid: rgb(255 255 255 / 0.95);    /* no backdrop-filter */
+  --glass-border: rgb(255 255 255 / 0.75);
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 28px rgb(0 0 0 / 0.08);
+  --glass-blur: 22px;
+
+  /* Color fades while dragging. Set to 0s for prefers-reduced-motion below. */
+  --color-transition-duration: 0.35s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --color-transition-duration: 0s;
+  }
+}
+
+/* Registered so they can transition: color-mix() results animate smoothly
+   when theme.js points the from/to/mix properties at a new blend. Seasons
+   blend in oklch, which travels around the hue wheel, so in-between colors
+   stay vivid instead of going muddy (green → red passes through gold). Coins
+   blend in oklab: silver has almost no hue, and oklab keeps the metals clean. */
+@property --season-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b7791f;
+}
+
+@property --season-accent-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ecc15b;
+}
+
+/* The season blend for the whole panel. theme.js sets --season-from/to/mix
+   on <html> (sliders.js calls it whenever the deadline changes), so every
+   element inherits the same two colors. */
+:root {
+  --season-accent: color-mix(in oklch, var(--season-from-1), var(--season-to-1) var(--season-mix));
+  --season-accent-2: color-mix(in oklch, var(--season-from-2), var(--season-to-2) var(--season-mix));
+  transition:
+    --season-accent var(--color-transition-duration),
+    --season-accent-2 var(--color-transition-duration);
+}
+
+@property --coin-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b0602a;
+}
+
+@property --coin-accent-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e7a774;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+/* Make the hidden attribute win over any display rule below. */
+[hidden] {
+  display: none !important;
+}
+
+/* Slightly large type and generous spacing: readable from a step away.
+   The panel is resizable (about 320–500px+), so nothing has a fixed width. */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--color-text);
+  background: color-mix(in oklab, var(--season-accent-2) var(--mesh-base-strength), var(--mesh-base-white));
+}
+
+/* Apple-style mesh gradient: blurred color blobs behind everything, fixed
+   to the viewport so it stays put while the panel scrolls. Its colors come
+   from the animated --season-accent / --season-accent-2, so it fades to the
+   new season as the date slider moves (instantly with reduced motion). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: calc(var(--mesh-blur) * -2);
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 32% at 18% 12%, color-mix(in oklab, var(--season-accent) var(--mesh-blob-strength), transparent), transparent 72%),
+    radial-gradient(42% 36% at 88% 24%, color-mix(in oklab, var(--season-accent-2) var(--mesh-blob-strength), transparent), transparent 72%),
+    radial-gradient(46% 34% at 14% 68%, color-mix(in oklab, var(--season-accent-2) var(--mesh-blob-strength), transparent), transparent 72%),
+    radial-gradient(44% 38% at 86% 90%, color-mix(in oklab, var(--season-accent) var(--mesh-blob-strength), transparent), transparent 72%);
+  filter: blur(var(--mesh-blur));
+}
+
+/* Frosted glass: every content section sits on one of these, so text is
+   always on a light, mostly-opaque surface whatever the season. */
+.glass {
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--glass-background);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+
+.glass--strong {
+  background: var(--glass-background-strong);
+}
+
+/* No backdrop blur available: use a nearly solid card instead. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass--strong {
+    background: var(--glass-background-solid);
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Full-height column so dev tools sit at the bottom of the panel. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.panel-main {
+  padding: 12px 12px 16px;
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-info);
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   1. Header and product line
+   ========================================================================== */
+
+.panel-header {
+  margin: 12px 12px 0;
+  padding: 14px 18px;
+}
+
+.panel-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+
+.panel-brand-icon {
+  display: block;
+}
+
+.product-line {
+  margin-top: 8px;
+}
+
+.product-line-title {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-line-price {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+/* ==========================================================================
+   Loading / message states
+   ========================================================================== */
+
+.status-view {
+  padding: 18px;
+}
+
+.status-view--loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-view--info {
+  border-left: 4px solid var(--color-info);
+}
+
+.status-view--warning {
+  border-left: 4px solid var(--confidence-medium);
+}
+
+.status-view--error {
+  border-left: 4px solid var(--color-error);
+}
+
+.status-view-title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.status-view-text {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.status-view-retry {
+  margin-top: 10px;
+}
+
+.spinner {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-info);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 3s; }
+}
+
+/* ==========================================================================
+   Recommendation card
+   ========================================================================== */
+
+.recommendation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.verdict-card,
+.details-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.action-card {
+  padding: 14px;
+}
+
+/* While a slider-triggered request runs, dim the result but keep it readable. */
+.recommendation-card--updating .verdict,
+.recommendation-card--updating .chance-line,
+.recommendation-card--updating .trust-row,
+.recommendation-card--updating .price-range {
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+/* ---- 2. Verdict: icon + word, in fixed (non-seasonal) colors ---- */
+
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: clamp(40px, 12vw, 56px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.verdict-icon {
+  flex: none;
+  width: 0.85em;
+  height: 0.85em;
+}
+
+.recommendation-card--wait .verdict { color: var(--verdict-wait); }
+.recommendation-card--buy-now .verdict { color: var(--verdict-buy); }
+.recommendation-card--wait .verdict-icon--buy-now,
+.recommendation-card--buy-now .verdict-icon--wait { display: none; }
+
+.recommendation-card--low-confidence .verdict {
+  font-size: clamp(30px, 9vw, 40px);
+  color: var(--verdict-uncertain);
+}
+
+.recommendation-notice {
+  margin: -6px 0 0;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+/* ---- 3. Chance line ---- */
+
+.chance-line {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.chance-line-pct {
+  display: block;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.chance-line-amount {
+  font-weight: 700;
+}
+
+.chance-line--no-data {
+  font-size: 17px;
+  color: var(--color-muted);
+}
+
+.recommendation-status {
+  margin: -6px 0 0;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.recommendation-status--error {
+  color: var(--color-error);
+}
+
+/* ==========================================================================
+   4. Sliders (sliders.js, colors from theme.js)
+   ========================================================================== */
+
+.preference-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preference-control {
+  --thumb-size: 24px;
+  padding: 16px 18px;
+}
+
+.preference-control-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.preference-control-label {
+  font-size: 15px;
+  color: var(--color-muted);
+}
+
+.preference-control-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Savings: copper → silver → gold */
+.preference-control--savings {
+  --coin-accent: color-mix(in oklab, var(--coin-from-1), var(--coin-to-1) var(--coin-mix));
+  --coin-accent-2: color-mix(in oklab, var(--coin-from-2), var(--coin-to-2) var(--coin-mix));
+  --slider-start: var(--coin-accent-2);
+  --slider-end: var(--coin-accent);
+  transition:
+    --coin-accent var(--color-transition-duration),
+    --coin-accent-2 var(--color-transition-duration);
+}
+
+/* Date: the deadline's season (blended on :root above) */
+.preference-control--deadline {
+  --slider-start: var(--season-accent-2);
+  --slider-end: var(--season-accent);
+}
+
+/* Custom range input: a filled track up to the thumb (--fill-fraction, set
+   by sliders.js) and a round thumb with a white ring and dark outline, so it
+   stays visible even on light palettes like summer yellow. */
+.preference-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: var(--thumb-size);
+  margin: 10px 0 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.preference-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--slider-start), var(--slider-end)) 0 0 /
+      calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * var(--fill-fraction, 0)) 100% no-repeat,
+    var(--color-track);
+}
+
+.preference-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  margin-top: calc((10px - var(--thumb-size)) / 2);
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--slider-end);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+.preference-slider:focus-visible {
+  outline: none;
+}
+
+.preference-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 0 0 5px var(--color-focus);
+}
+
+/* A picked date between stops: the native thumb can only sit on a stop, so
+   it's made invisible (still draggable) and .deadline-slider-custom-thumb is
+   drawn at the date's true position instead; the fill runs to it too. */
+.preference-slider--custom::-webkit-slider-thumb {
+  opacity: 0;
+}
+
+.deadline-slider-custom-thumb {
+  --marker-position: 0;
+  position: absolute;
+  left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * var(--marker-position));
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  margin-top: calc(var(--thumb-size) * -1);
+  transform: translateX(-50%);
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--slider-end);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+  pointer-events: none;
+}
+
+/* Holiday markers and stop labels are positioned along the track. The
+   thumb-size/2 inset lines 0 and 1 up with the thumb's centre at each end. */
+.deadline-slider {
+  position: relative;
+}
+
+.deadline-slider-markers {
+  position: relative;
+  height: 30px;
+  margin-top: 6px;
+}
+
+.deadline-slider-marker {
+  --marker-position: 0;
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * var(--marker-position));
+  transform: translateX(-50%);
+  padding: 0 2px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* A thin tick from each marker down to the track, in the season's color. */
+.deadline-slider-marker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  height: 6px;
+  border-left: 2px solid var(--season-accent);
+}
+
+/* Markers close together (e.g. Christmas and New Year) alternate heights. */
+.deadline-slider-marker--raised {
+  bottom: 14px;
+}
+
+.deadline-slider-marker--raised::after {
+  height: 20px;
+}
+
+.deadline-slider-stops {
+  position: relative;
+  height: 18px;
+  margin-top: 4px;
+}
+
+.deadline-slider-stop {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.deadline-slider-stop:nth-child(1) { left: calc(var(--thumb-size) / 2); }
+.deadline-slider-stop:nth-child(2) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.2); }
+.deadline-slider-stop:nth-child(3) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.4); }
+.deadline-slider-stop:nth-child(4) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.6); }
+.deadline-slider-stop:nth-child(5) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.8); }
+.deadline-slider-stop:nth-child(6) { left: calc(100% - var(--thumb-size) / 2); }
+
+.deadline-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.deadline-date-input {
+  font: inherit;
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   5. Buy now / Wait & watch
+   ========================================================================== */
+
+.recommendation-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  flex: 1;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font: inherit;
+  font-size: clamp(15px, 4.6vw, 17px); /* keeps "Wait & watch" on one line at 320px */
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.action-button--buy {
+  border-color: var(--button-buy-background);
+  background: var(--button-buy-background);
+  color: var(--button-buy-text);
+}
+
+.action-button--watch:not(:disabled):hover {
+  background: var(--color-surface);
+}
+
+.watch-confirmation {
+  margin: 10px 2px 0;
+  font-size: 15px;
+  color: var(--color-success);
+}
+
+.watch-confirmation--error {
+  color: var(--color-error);
+}
+
+/* ==========================================================================
+   6. Trust row and "Why?"
+   ========================================================================== */
+
+.trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-background);
+}
+
+/* A colored dot next to the confidence word (the word carries the meaning). */
+.chip--confidence::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+
+.chip--confidence-high::before { background: var(--confidence-high); }
+.chip--confidence-medium::before { background: var(--confidence-medium); }
+.chip--confidence-low::before { background: var(--confidence-low); }
+
+.chip--source {
+  border-style: dashed;
+  color: var(--color-muted);
+}
+
+.why-toggle {
+  margin-left: auto;
+  padding: 4px 6px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-info);
+  cursor: pointer;
+}
+
+.why-toggle::after {
+  content: "▸";
+  display: inline-block;
+  margin-left: 4px;
+  transition: transform 0.15s;
+}
+
+.why-toggle[aria-expanded="true"]::after {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .why-toggle::after { transition: none; }
+}
+
+.why-panel {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgb(246 248 250 / 0.85);
+}
+
+.why-panel-explanation {
+  margin: 0 0 10px;
+}
+
+.why-panel-facts {
+  margin: 0;
+}
+
+.why-panel-fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.why-panel-fact-label {
+  color: var(--color-muted);
+}
+
+.why-panel-fact-value {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ==========================================================================
+   7. Likely price range bar
+   ========================================================================== */
+
+.price-range-title {
+  margin: 0;
+  font-size: 15px;
+  color: var(--color-muted);
+}
+
+.price-range-values {
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* --band-start, --band-end and --today are fractions (0–1) set by render.js. */
+.price-range-bar {
+  position: relative;
+  height: 10px;
+  margin: 16px 0 8px;
+  border-radius: 999px;
+  background: var(--color-track);
+}
+
+.price-range-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--band-start, 0) * 100%);
+  width: calc((var(--band-end, 1) - var(--band-start, 0)) * 100%);
+  border-radius: 999px;
+  background: var(--range-band);
+}
+
+.price-range-today {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: calc(var(--today, 1) * 100%);
+  width: 4px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: var(--range-today);
+}
+
+.price-range-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.price-range-scale-today {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   8. Watching list
+   ========================================================================== */
+
+.watchlist {
+  margin: 0 12px 16px;
+  padding: 14px 18px 6px;
+}
+
+.watchlist-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.watchlist-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.watchlist-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.watchlist-item-info {
+  min-width: 0;
+}
+
+.watchlist-item-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.watchlist-item-title:hover {
+  text-decoration: underline;
+}
+
+.watchlist-item-target,
+.watchlist-item-status {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.watchlist-item-status {
+  color: var(--color-success);
+}
+
+.watchlist-item-remove {
+  flex: none;
+}
+
+/* ==========================================================================
+   9. Dev tools
+   ========================================================================== */
+
+.dev-panel {
+  margin: auto 12px 16px; /* auto top margin pushes it to the panel's bottom */
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
+.dev-panel-summary {
+  cursor: pointer;
+  color: var(--color-muted);
+}
+
+.dev-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.dev-panel-hint {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+}
+
+.dev-panel-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.dev-panel-select {
+  max-width: 60%;
+  font-size: 13px;
+}
+
+.dev-panel-group {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.dev-panel-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.dev-panel-button {
+  flex: 1;
+  font-size: 12px;
+}
+
+.dev-panel-status {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+}

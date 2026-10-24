@@ -1,5 +1,5 @@
 // Watched products ("Wait & watch"), stored in chrome.storage.local under
-// "watches" as { [product_id]: watch }. Shared by the popup (adds/removes)
+// "watches" as { [product_id]: watch }. Shared by the side panel (adds/removes)
 // and the background worker (checks prices, marks what it has notified).
 //
 // A watch:

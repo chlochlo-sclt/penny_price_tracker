@@ -1,4 +1,4 @@
-// Date helpers shared by the popup and background worker. Everything works
+// Date helpers shared by the side panel and background worker. Everything works
 // in the user's local time zone at day granularity: a deadline of
 // "2026-11-27" means the end of Nov 27 where the user is.
 
@@ -36,6 +36,26 @@ function parseIsoDate(iso) {
 /** Date → "Nov 27" */
 function formatShortDate(date) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/** The next month/day (month is 1–12) on or after `from`, e.g. Oct 31 → next Halloween. */
+function nextOccurrence(month, day, from = new Date()) {
+  const today = startOfDay(from);
+  const thisYear = new Date(today.getFullYear(), month - 1, day);
+  return thisYear >= today ? thisYear : new Date(today.getFullYear() + 1, month - 1, day);
+}
+
+/**
+ * The next occurrence of each holiday the deadline slider marks, soonest
+ * first: [{ id, name, date }]. Works for any year.
+ */
+function upcomingHolidays(from = new Date()) {
+  return [
+    { id: "halloween", name: "Halloween", date: nextOccurrence(10, 31, from) },
+    { id: "black-friday", name: "Black Friday", date: nextBlackFriday(from) },
+    { id: "christmas", name: "Christmas", date: nextOccurrence(12, 25, from) },
+    { id: "new-year", name: "New Year's Day", date: nextOccurrence(1, 1, from) },
+  ].sort((a, b) => a.date - b.date);
 }
 
 /** The next Black Friday on or after `from`: the day after the 4th Thursday of November. */
