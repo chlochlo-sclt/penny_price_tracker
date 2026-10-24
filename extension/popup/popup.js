@@ -43,31 +43,10 @@ const DEV_MOCK_DETECTIONS = {
   error: { status: "error", product: null, reason: "Mock detection error" },
 };
 
-// chrome.storage keeps the choice between popup openings. When previewing
-// popup.html as a plain page there's no chrome.storage, so use localStorage.
+// Kept between popup openings in chrome.storage.local (see shared/storage.js).
 async function loadDevSettings() {
   if (!IS_DEV_INSTALL) return DEFAULT_DEV_SETTINGS;
-  try {
-    if (globalThis.chrome?.storage) {
-      const stored = await chrome.storage.local.get(DEV_SETTINGS_KEY);
-      return { ...DEFAULT_DEV_SETTINGS, ...stored[DEV_SETTINGS_KEY] };
-    }
-    return { ...DEFAULT_DEV_SETTINGS, ...JSON.parse(localStorage.getItem(DEV_SETTINGS_KEY)) };
-  } catch {
-    return DEFAULT_DEV_SETTINGS;
-  }
-}
-
-async function saveDevSettings(settings) {
-  try {
-    if (globalThis.chrome?.storage) {
-      await chrome.storage.local.set({ [DEV_SETTINGS_KEY]: settings });
-    } else {
-      localStorage.setItem(DEV_SETTINGS_KEY, JSON.stringify(settings));
-    }
-  } catch (err) {
-    console.warn("[placeholder] couldn't save dev settings", err);
-  }
+  return { ...DEFAULT_DEV_SETTINGS, ...(await storageGet("local", DEV_SETTINGS_KEY, {})) };
 }
 
 async function setUpDevPanel() {
@@ -86,7 +65,7 @@ async function setUpDevPanel() {
 
   const onChange = async () => {
     syncMockFileState();
-    await saveDevSettings({
+    await storageSet("local", DEV_SETTINGS_KEY, {
       detection: detectionSelect.value,
       source: sourceSelect.value,
       prediction: predictionSelect.value,
@@ -103,8 +82,8 @@ async function detectWithDevOverride(settings) {
   return DEV_MOCK_DETECTIONS[settings.detection];
 }
 
-async function predictWithDevOverride(product, settings) {
-  if (settings.source !== "mock") return getPrediction(product);
+async function predictWithDevOverride(product, preferences, settings, signal) {
+  if (settings.source !== "mock") return getPrediction(product, preferences, { signal });
   if (settings.prediction === "__loading") return new Promise(() => {});
   if (settings.prediction === "__error") throw new Error("Mock prediction failure");
   return getMockPrediction(settings.prediction);
@@ -126,6 +105,44 @@ function checkPrediction(prediction) {
   return prediction;
 }
 
+// The product the card is about, the dev settings for this run, and the
+// prediction request in flight (so a newer one can cancel it).
+let currentProduct = null;
+let currentSettings = DEFAULT_DEV_SETTINGS;
+let predictionController = null;
+
+/**
+ * Requests a prediction for currentProduct with the given slider values.
+ * Cancels any request still in flight, so only the latest result renders.
+ * The first request of a run shows the full loading view; later ones (from
+ * the sliders) keep the card visible and show a small "Updating…" state.
+ */
+async function requestPrediction(sliderValues, { initial }) {
+  predictionController?.abort();
+  const controller = (predictionController = new AbortController());
+  const request = {
+    preferences: getPreferences(sliderValues),
+    price: currentProduct.price,
+    currency: currentProduct.currency ?? "USD",
+  };
+
+  if (initial) renderLoading("Checking price history…");
+  else renderUpdating(true);
+
+  try {
+    const raw = await predictWithDevOverride(currentProduct, request.preferences, currentSettings, controller.signal);
+    if (controller.signal.aborted) return;
+    const prediction = checkPrediction(raw);
+    console.log("[placeholder] prediction", request.preferences, prediction);
+    renderRecommendation(prediction, request);
+  } catch (err) {
+    if (controller.signal.aborted || err?.kind === "cancelled") return;
+    console.error("[placeholder] prediction failed", err, err?.detail ?? "");
+    if (initial) renderPredictionError(err);
+    else renderUpdateError(err);
+  }
+}
+
 // Each run gets a number so that a slow, older run (e.g. after switching dev
 // settings) can't overwrite the screen once a newer run has started.
 let latestRun = 0;
@@ -133,14 +150,17 @@ let latestRun = 0;
 async function run() {
   const runId = ++latestRun;
   const isCurrent = () => runId === latestRun;
-  const settings = await loadDevSettings();
+  predictionController?.abort();
+  currentProduct = null;
+  $("watch-confirmation").hidden = true;
+  currentSettings = await loadDevSettings();
 
   renderProduct(null);
   renderLoading("Looking for a product on this page…");
 
   let detection;
   try {
-    detection = await detectWithDevOverride(settings);
+    detection = await detectWithDevOverride(currentSettings);
   } catch (err) {
     console.error("[placeholder] detection failed", err);
     detection = { status: "error", product: null, reason: String(err?.message ?? err) };
@@ -155,18 +175,24 @@ async function run() {
     return;
   }
 
-  renderLoading("Checking price history…");
-  try {
-    const prediction = checkPrediction(await predictWithDevOverride(detection.product, settings));
-    if (!isCurrent()) return;
-    console.log("[placeholder] prediction", prediction);
-    renderRecommendation(prediction);
-  } catch (err) {
-    if (!isCurrent()) return;
-    console.error("[placeholder] prediction failed", err, err?.detail ?? "");
-    renderPredictionError(err);
-  }
+  currentProduct = detection.product;
+  PreferenceSliders.setPrice(currentProduct.price, currentProduct.currency ?? "USD");
+  WatchlistUI.refresh();
+  await requestPrediction(PreferenceSliders.getValues(), { initial: true });
 }
 
-setUpDevPanel();
-run();
+async function start() {
+  // Slider moves (already debounced by sliders.js) re-request the forecast.
+  await PreferenceSliders.init((values) => {
+    WatchlistUI.refresh();
+    if (currentProduct) requestPrediction(values, { initial: false });
+  });
+  await WatchlistUI.init({
+    getProduct: () => currentProduct,
+    getGoal: () => PreferenceSliders.getValues(),
+  });
+  setUpDevPanel();
+  run();
+}
+
+start();

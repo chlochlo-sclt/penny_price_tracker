@@ -33,10 +33,50 @@
         Not enough price history for a confident call yet.
       </p>
       <h2 class="recommendation-verdict" id="verdict"></h2>
-      <p class="recommendation-probability">
-        <span class="recommendation-probability-value" id="p-drop"></span>
-        chance the price drops
-      </p>
+
+      <!-- Goal sliders (sliders.js). Moving them re-requests the forecast. -->
+      <section class="preference-controls" aria-label="Your goals">
+        <div class="preference-control">
+          <div class="preference-control-header">
+            <label class="preference-control-label" for="savings-slider">How much do you want to save?</label>
+            <output class="preference-control-value" id="savings-value" for="savings-slider"></output>
+          </div>
+          <input class="preference-slider" id="savings-slider" type="range" min="0" max="30" step="1">
+        </div>
+
+        <div class="preference-control">
+          <div class="preference-control-header">
+            <label class="preference-control-label" for="deadline-slider">When do you need it by?</label>
+            <output class="preference-control-value" id="deadline-value" for="deadline-slider"></output>
+          </div>
+          <div class="deadline-slider">
+            <span class="deadline-slider-marker" id="black-friday-marker" hidden>Black Friday</span>
+            <input class="preference-slider" id="deadline-slider" type="range" min="0" max="5" step="1">
+            <div class="deadline-slider-stops" aria-hidden="true">
+              <span class="deadline-slider-stop">1 wk</span>
+              <span class="deadline-slider-stop">2 wk</span>
+              <span class="deadline-slider-stop">3 wk</span>
+              <span class="deadline-slider-stop">1 mo</span>
+              <span class="deadline-slider-stop">2 mo</span>
+              <span class="deadline-slider-stop">3 mo</span>
+            </div>
+          </div>
+          <div class="deadline-custom">
+            <button class="link-button" id="pick-date-button" type="button">Pick a date</button>
+            <input class="deadline-date-input" id="deadline-date-input" type="date" aria-label="Deadline date" hidden>
+          </div>
+        </div>
+      </section>
+
+      <p class="recommendation-result" id="recommendation-result"></p>
+      <p class="recommendation-status" id="recommendation-status" aria-live="polite" hidden></p>
+
+      <!-- watchlist-ui.js -->
+      <div class="recommendation-actions">
+        <button class="action-button action-button--buy" id="buy-now-button" type="button">Buy now</button>
+        <button class="action-button action-button--watch" id="watch-button" type="button">Wait &amp; watch</button>
+      </div>
+      <p class="watch-confirmation" id="watch-confirmation" aria-live="polite" hidden></p>
       <p class="recommendation-best-price">
         Likely best price before your deadline:
         <strong class="recommendation-best-price-value" id="best-price-range"></strong>
@@ -63,6 +103,23 @@
       <p class="data-source-label" id="data-source-label" hidden></p>
     </article>
   </main>
+
+  <!-- Watched products (watchlist-ui.js). Shown on every screen when non-empty. -->
+  <section class="watchlist" id="watchlist" aria-labelledby="watchlist-title" hidden>
+    <h2 class="watchlist-title" id="watchlist-title">Watching</h2>
+    <ul class="watchlist-items" id="watchlist-items"></ul>
+  </section>
+
+  <template id="watchlist-item-template">
+    <li class="watchlist-item">
+      <div class="watchlist-item-info">
+        <a class="watchlist-item-title" target="_blank" rel="noopener"></a>
+        <p class="watchlist-item-target"></p>
+        <p class="watchlist-item-status" hidden></p>
+      </div>
+      <button class="watchlist-item-remove link-button" type="button">Remove</button>
+    </li>
+  </template>
 
   <!-- Only shown for unpacked (developer) installs; see popup.js. -->
   <details class="dev-panel" id="dev-panel" hidden>
@@ -97,11 +154,28 @@
         <option value="__error">Request fails (error)</option>
       </select>
     </label>
+    <div class="dev-panel-group">
+      <label class="dev-panel-field">
+        <span class="dev-panel-label">Watched item</span>
+        <select class="dev-panel-select" id="dev-watch"></select>
+      </label>
+      <div class="dev-panel-buttons">
+        <button class="dev-panel-button" id="dev-simulate-drop" type="button">Simulate price drop</button>
+        <button class="dev-panel-button" id="dev-simulate-deadline" type="button">Simulate deadline approaching</button>
+      </div>
+      <p class="dev-panel-status" id="dev-simulate-status" aria-live="polite"></p>
+    </div>
   </details>
 
-  <!-- MV3 blocks inline scripts. Order matters: popup.js uses the other two. -->
+  <!-- MV3 blocks inline scripts. Order matters: each file may use the ones above it. -->
+  <script src="../shared/config.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="../shared/dates.js"></script>
+  <script src="../shared/watchlist.js"></script>
   <script src="api.js"></script>
   <script src="render.js"></script>
+  <script src="sliders.js"></script>
+  <script src="watchlist-ui.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

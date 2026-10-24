@@ -23,6 +23,22 @@ function formatMoney(value, currency = "USD") {
   }
 }
 
+/** Whole dollars for amounts of $10 or more ("$115"), cents below that ("$6.25"). */
+function formatMoneyShort(value, currency = "USD") {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  const digits = Math.abs(value) >= 10 ? 0 : 2;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(value);
+  } catch {
+    return value.toFixed(digits);
+  }
+}
+
 /** 0.72 → "72%" */
 function formatProbability(fraction) {
   if (typeof fraction !== "number") return "—";
@@ -153,8 +169,52 @@ const DATA_SOURCE_LABELS = {
   mock: "Mock data",
 };
 
-/** Fills in the card from a prediction (field names match mock/predict.json). */
-function renderRecommendation(prediction) {
+/**
+ * "72% chance you'll save at least 10% ($115) by Nov 27". p_drop is the
+ * chance the price falls at least min_savings_pct below today's within
+ * deadline_days (see app/forecast.py), so the line describes the request
+ * that produced this prediction, not wherever the sliders are now.
+ */
+function resultLine(prediction, request) {
+  const { min_savings_pct: pct, deadline_days: days } = request.preferences;
+  // The backend returns p_drop 0 with low confidence when it has too little
+  // history to forecast at all (enough_data = false in app/forecast.py).
+  if (prediction.p_drop === 0 && prediction.confidence === "low") {
+    return "Not enough price history to estimate the chance of a drop yet.";
+  }
+  const savings = formatMoneyShort((request.price * pct) / 100, request.currency);
+  const by = formatShortDate(addDays(startOfDay(), days));
+  return `${formatProbability(prediction.p_drop)} chance you'll save at least ${pct}% (${savings}) by ${by}`;
+}
+
+/** Shows or hides the subtle "Updating…" state while the sliders' request runs. */
+function renderUpdating(isUpdating) {
+  $("recommendation-card").classList.toggle("recommendation-card--updating", isUpdating);
+  const status = $("recommendation-status");
+  status.className = "recommendation-status";
+  status.textContent = isUpdating ? "Updating…" : "";
+  status.hidden = !isUpdating;
+}
+
+/** A slider-triggered request failed: keep the last result, say it's out of date. */
+function renderUpdateError(err) {
+  renderUpdating(false);
+  const status = $("recommendation-status");
+  const reason =
+    err?.kind === "network" ? "can't reach the forecast server"
+      : err?.kind === "timeout" ? "the server took too long"
+        : err?.kind === "rejected" && err.detail ? err.detail
+          : "something went wrong";
+  status.className = "recommendation-status recommendation-status--error";
+  status.textContent = `Couldn't update: ${reason}. Showing the last result.`;
+  status.hidden = false;
+}
+
+/**
+ * Fills in the card from a prediction (field names match mock/predict.json).
+ * `request` is what was asked: { preferences, price, currency }.
+ */
+function renderRecommendation(prediction, request) {
   const isLowConfidence = prediction.confidence === "low";
   const verdict = VERDICT_LABELS[prediction.recommendation];
 
@@ -167,7 +227,8 @@ function renderRecommendation(prediction) {
   $("low-confidence-notice").hidden = !isLowConfidence;
   $("verdict").textContent = isLowConfidence ? `Leaning “${verdict}”` : verdict;
 
-  $("p-drop").textContent = formatProbability(prediction.p_drop);
+  $("recommendation-result").textContent = resultLine(prediction, request);
+  renderUpdating(false);
   $("expected-savings").textContent =
     `${formatPercent(prediction.expected_drop_pct)} (${formatMoney(prediction.expected_drop_usd)})`;
   // 10th–90th percentile of the lowest price before the shopper's deadline

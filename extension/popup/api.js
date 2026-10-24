@@ -1,10 +1,6 @@
 // Data layer: where the popup's data comes from. Nothing here touches the
 // DOM; render.js does all the drawing and popup.js connects the two.
-
-// The backend (app/main.py). Must also be listed in host_permissions in
-// manifest.json, or Chrome blocks the request.
-const API_BASE_URL = "http://127.0.0.1:8000";
-const PREDICT_TIMEOUT_MS = 10_000;
+// API_BASE_URL and REQUEST_TIMEOUT_MS live in shared/config.js.
 
 /**
  * Asks the active tab's content script what product it sees.
@@ -31,22 +27,22 @@ async function getDetection() {
 }
 
 /**
- * The shopper's preferences, sent with every prediction. Matches
- * Preferences in app/schemas.py. These are the backend's own defaults;
- * replace this with saved preferences once the settings form exists.
+ * The full Preferences object for app/schemas.py, built from the slider
+ * values. There's no UI for risk tolerance or budget, so those are fixed.
  */
-async function getPreferences() {
+function getPreferences({ min_savings_pct, deadline_days }) {
   return {
     risk_tolerance: "balanced", // "cautious" | "balanced" | "bold"
-    min_savings_pct: 5,         // only wait for drops at least this big
-    deadline_days: 14,          // 1–90: how long the shopper can wait
-    budget_usd: null,           // buy now if the price is already at or under this
+    min_savings_pct,            // only count drops at least this big (%)
+    deadline_days,              // 1–90: how long the shopper can wait
+    budget_usd: null,           // no budget: never "buy because it's under budget"
   };
 }
 
 /**
  * Thrown by getPrediction. `kind` tells the popup which message to show:
- * "timeout" | "network" | "rejected" (422) | "http" (other non-2xx) | "invalid_json".
+ * "timeout" | "network" | "rejected" (422) | "http" (other non-2xx) |
+ * "invalid_json" | "cancelled" (a newer request replaced this one).
  * `detail` is the backend's own error message, when it sent one.
  */
 class PredictionError extends Error {
@@ -77,17 +73,33 @@ function readErrorDetail(body) {
   return null;
 }
 
-/** Gets a buy/wait prediction for a detected product from POST /predict. */
-async function getPrediction(product) {
+/**
+ * Gets a buy/wait prediction for a detected product from POST /predict.
+ * Pass `options.signal` to cancel it (e.g. when the sliders move again);
+ * a cancelled request rejects with kind "cancelled".
+ */
+async function getPrediction(product, preferences, options = {}) {
   // The backend ignores fields it doesn't know (title, url, site, ...).
-  const body = { ...product, preferences: await getPreferences() };
+  const body = { ...product, preferences };
+
+  // One controller aborts the fetch for either reason: our timeout, or the
+  // caller's signal. `timedOut` tells the two apart afterwards.
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+  const cancel = () => controller.abort();
+  options.signal?.addEventListener("abort", cancel, { once: true });
+  if (options.signal?.aborted) cancel();
+
+  const abortError = () =>
+    timedOut
+      ? new PredictionError("timeout", `No response from ${API_BASE_URL} after ${REQUEST_TIMEOUT_MS / 1000}s`)
+      : new PredictionError("cancelled", "Replaced by a newer request");
 
   // The timer covers the whole exchange, including reading the body.
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), PREDICT_TIMEOUT_MS);
-  const timeoutError = () =>
-    new PredictionError("timeout", `No response from ${API_BASE_URL} after ${PREDICT_TIMEOUT_MS / 1000}s`);
-
   try {
     let response;
     try {
@@ -98,7 +110,7 @@ async function getPrediction(product) {
         signal: controller.signal,
       });
     } catch (err) {
-      if (err.name === "AbortError") throw timeoutError();
+      if (err.name === "AbortError") throw abortError();
       // fetch only rejects like this when there's no HTTP response at all,
       // e.g. the backend isn't running.
       throw new PredictionError("network", `Couldn't reach ${API_BASE_URL}: ${err.message}`);
@@ -113,11 +125,12 @@ async function getPrediction(product) {
     try {
       return await response.json();
     } catch (err) {
-      if (err.name === "AbortError") throw timeoutError();
+      if (err.name === "AbortError") throw abortError();
       throw new PredictionError("invalid_json", "POST /predict returned a response that isn't valid JSON");
     }
   } finally {
     clearTimeout(timer);
+    options.signal?.removeEventListener("abort", cancel);
   }
 }
 
