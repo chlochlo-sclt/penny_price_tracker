@@ -37,15 +37,15 @@
         <span class="recommendation-probability-value" id="p-drop"></span>
         chance the price drops
       </p>
+      <p class="recommendation-best-price">
+        Likely best price before your deadline:
+        <strong class="recommendation-best-price-value" id="best-price-range"></strong>
+      </p>
 
       <dl class="recommendation-details">
         <div class="recommendation-detail">
           <dt class="recommendation-detail-label">Expected savings</dt>
           <dd class="recommendation-detail-value" id="expected-savings"></dd>
-        </div>
-        <div class="recommendation-detail">
-          <dt class="recommendation-detail-label">Likely price range</dt>
-          <dd class="recommendation-detail-value" id="price-interval"></dd>
         </div>
         <div class="recommendation-detail">
           <dt class="recommendation-detail-label">Confidence</dt>
@@ -60,7 +60,7 @@
       </dl>
 
       <p class="recommendation-explanation" id="explanation"></p>
-      <p class="data-source-label" id="simulated-label" hidden>Simulated data</p>
+      <p class="data-source-label" id="data-source-label" hidden></p>
     </article>
   </main>
 
@@ -80,7 +80,14 @@
       </select>
     </label>
     <label class="dev-panel-field">
-      <span class="dev-panel-label">Prediction</span>
+      <span class="dev-panel-label">Data source</span>
+      <select class="dev-panel-select" id="dev-source">
+        <option value="backend">Backend (POST /predict)</option>
+        <option value="mock">Mock (file below)</option>
+      </select>
+    </label>
+    <label class="dev-panel-field">
+      <span class="dev-panel-label">Mock file</span>
       <select class="dev-panel-select" id="dev-prediction">
         <option value="predict.json">predict.json</option>
         <option value="predict_wait.json">predict_wait.json</option>

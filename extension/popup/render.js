@@ -95,16 +95,40 @@ const MESSAGES = {
     title: "Couldn't load a recommendation",
     text: "Something went wrong getting the forecast. Try again in a moment.",
   },
+  backend_unreachable: {
+    tone: "error",
+    title: "Can't reach the forecast server",
+    text: "Make sure the backend is running on 127.0.0.1:8000, then reopen this popup.",
+  },
+  backend_timeout: {
+    tone: "error",
+    title: "The forecast is taking too long",
+    text: "The server didn't answer within 10 seconds. Try again in a moment.",
+  },
+  // `text` is replaced by the backend's own message when it sends one.
+  backend_rejected: {
+    tone: "warning",
+    title: "Can't forecast this item",
+    text: "The server couldn't use this product's details.",
+  },
 };
 
-/** Shows a message state by key from MESSAGES. */
-function renderMessage(key) {
+/** Shows a message state by key from MESSAGES; `text` overrides the default copy. */
+function renderMessage(key, text = null) {
   const message = MESSAGES[key] ?? MESSAGES.detection_error;
   const view = $("message-view");
   view.className = `status-view status-view--${message.tone}`;
   $("message-title").textContent = message.title;
-  $("message-text").textContent = message.text;
+  $("message-text").textContent = text || message.text;
   showView("message-view");
+}
+
+/** Maps an error from getPrediction (see PredictionError in api.js) to a message. */
+function renderPredictionError(err) {
+  if (err?.kind === "network") renderMessage("backend_unreachable");
+  else if (err?.kind === "timeout") renderMessage("backend_timeout");
+  else if (err?.kind === "rejected") renderMessage("backend_rejected", err.detail);
+  else renderMessage("prediction_error");
 }
 
 /** Maps a non-"ok" detection result to the right message. */
@@ -121,6 +145,13 @@ function renderDetectionProblem(detection) {
 // ---- Recommendation card --------------------------------------------------
 
 const VERDICT_LABELS = { buy_now: "Buy now", wait: "Wait" };
+
+// "real" data gets no label.
+const DATA_SOURCE_LABELS = {
+  mixed: "Partly simulated data",
+  simulated: "Simulated data",
+  mock: "Mock data",
+};
 
 /** Fills in the card from a prediction (field names match mock/predict.json). */
 function renderRecommendation(prediction) {
@@ -139,8 +170,10 @@ function renderRecommendation(prediction) {
   $("p-drop").textContent = formatProbability(prediction.p_drop);
   $("expected-savings").textContent =
     `${formatPercent(prediction.expected_drop_pct)} (${formatMoney(prediction.expected_drop_usd)})`;
-  $("price-interval").textContent =
-    `${formatMoney(prediction.interval_low_usd)} – ${formatMoney(prediction.interval_high_usd)}`;
+  // 10th–90th percentile of the lowest price before the shopper's deadline
+  // (the high end is capped at today's price). Not the same as savings.
+  $("best-price-range").textContent =
+    `${formatMoney(prediction.interval_low_usd)}–${formatMoney(prediction.interval_high_usd)}`;
 
   const confidence = $("confidence");
   confidence.textContent = prediction.confidence;
@@ -150,7 +183,11 @@ function renderRecommendation(prediction) {
   if (prediction.best_day) $("best-day").textContent = formatDay(prediction.best_day);
 
   $("explanation").textContent = prediction.explanation ?? "";
-  $("simulated-label").hidden = prediction.data_source !== "simulated";
+  const sourceLabel = DATA_SOURCE_LABELS[prediction.data_source];
+  const sourceEl = $("data-source-label");
+  sourceEl.hidden = !sourceLabel;
+  sourceEl.textContent = sourceLabel ?? "";
+  sourceEl.className = `data-source-label data-source-label--${prediction.data_source}`;
 
   showView("recommendation-card");
 }

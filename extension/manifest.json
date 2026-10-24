@@ -3,14 +3,22 @@
   "name": "[placeholder]",
   "version": "0.1.0",
   "description": "Tells Amazon shoppers whether to buy now or wait, based on a price-drop forecast.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*"
+  ],
   "action": {
     "default_title": "[placeholder]",
     "default_popup": "popup/popup.html"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.amazon.com/*"],
+      "matches": [
+        "https://www.amazon.com/*"
+      ],
       "js": [
         "content/utils.js",
         "content/extractors/generic.js",

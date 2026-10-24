@@ -4,7 +4,7 @@
   "expected_drop_pct": 6.0,
   "expected_drop_usd": 7.2,
   "interval_low_usd": 89.99,
-  "interval_high_usd": 124.99,
+  "interval_high_usd": 119.99,
   "confidence": "low",
   "best_day": null,
   "explanation": "We only have 9 days of price history for this item, so this forecast is a rough guess.",

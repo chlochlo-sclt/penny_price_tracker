@@ -1,6 +1,11 @@
 // Data layer: where the popup's data comes from. Nothing here touches the
 // DOM; render.js does all the drawing and popup.js connects the two.
 
+// The backend (app/main.py). Must also be listed in host_permissions in
+// manifest.json, or Chrome blocks the request.
+const API_BASE_URL = "http://127.0.0.1:8000";
+const PREDICT_TIMEOUT_MS = 10_000;
+
 /**
  * Asks the active tab's content script what product it sees.
  * Always resolves with a detection result (see content/content.js), plus
@@ -26,14 +31,98 @@ async function getDetection() {
 }
 
 /**
- * Gets a buy/wait prediction for a detected product.
- * This is the one function to replace when the backend is ready: keep the
- * same signature and return the same fields, e.g.
- *   const res = await fetch(`${API_BASE}/predict`, { method: "POST", ... body: JSON.stringify(product) });
- * `options.mockFile` picks which file in mock/ to return (dev tools use it).
+ * The shopper's preferences, sent with every prediction. Matches
+ * Preferences in app/schemas.py. These are the backend's own defaults;
+ * replace this with saved preferences once the settings form exists.
  */
-async function getPrediction(product, options = {}) {
-  const mockFile = options.mockFile ?? "predict.json";
+async function getPreferences() {
+  return {
+    risk_tolerance: "balanced", // "cautious" | "balanced" | "bold"
+    min_savings_pct: 5,         // only wait for drops at least this big
+    deadline_days: 14,          // 1–90: how long the shopper can wait
+    budget_usd: null,           // buy now if the price is already at or under this
+  };
+}
+
+/**
+ * Thrown by getPrediction. `kind` tells the popup which message to show:
+ * "timeout" | "network" | "rejected" (422) | "http" (other non-2xx) | "invalid_json".
+ * `detail` is the backend's own error message, when it sent one.
+ */
+class PredictionError extends Error {
+  constructor(kind, message, detail = null) {
+    super(message);
+    this.name = "PredictionError";
+    this.kind = kind;
+    this.detail = detail;
+  }
+}
+
+/**
+ * FastAPI errors look like { detail: "text" } for errors the app raises, or
+ * { detail: [{ loc: ["body", "price"], msg: "..." }, ...] } when the request
+ * fails schema validation. Turns either into one readable string.
+ */
+function readErrorDetail(body) {
+  const detail = body?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => {
+        const field = (d.loc ?? []).filter((part) => part !== "body").join(".");
+        return field ? `${field}: ${d.msg}` : d.msg;
+      })
+      .join("; ");
+  }
+  return null;
+}
+
+/** Gets a buy/wait prediction for a detected product from POST /predict. */
+async function getPrediction(product) {
+  // The backend ignores fields it doesn't know (title, url, site, ...).
+  const body = { ...product, preferences: await getPreferences() };
+
+  // The timer covers the whole exchange, including reading the body.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PREDICT_TIMEOUT_MS);
+  const timeoutError = () =>
+    new PredictionError("timeout", `No response from ${API_BASE_URL} after ${PREDICT_TIMEOUT_MS / 1000}s`);
+
+  try {
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === "AbortError") throw timeoutError();
+      // fetch only rejects like this when there's no HTTP response at all,
+      // e.g. the backend isn't running.
+      throw new PredictionError("network", `Couldn't reach ${API_BASE_URL}: ${err.message}`);
+    }
+
+    if (!response.ok) {
+      const detail = readErrorDetail(await response.json().catch(() => null));
+      const kind = response.status === 422 ? "rejected" : "http";
+      throw new PredictionError(kind, `POST /predict returned HTTP ${response.status}`, detail);
+    }
+
+    try {
+      return await response.json();
+    } catch (err) {
+      if (err.name === "AbortError") throw timeoutError();
+      throw new PredictionError("invalid_json", "POST /predict returned a response that isn't valid JSON");
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Reads a file from mock/ instead of calling the backend (dev tools). */
+async function getMockPrediction(mockFile) {
   const response = await fetch(`../mock/${mockFile}`);
   if (!response.ok) throw new Error(`Loading mock/${mockFile} failed: HTTP ${response.status}`);
   return response.json();

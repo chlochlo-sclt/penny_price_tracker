@@ -12,7 +12,8 @@ console.log("[placeholder] popup opened");
 
 const IS_DEV_INSTALL = !globalThis.chrome?.runtime?.getManifest?.().update_url;
 const DEV_SETTINGS_KEY = "devSettings";
-const DEFAULT_DEV_SETTINGS = { detection: "live", prediction: "predict.json" };
+// source: "backend" calls POST /predict; "mock" reads `prediction` from mock/.
+const DEFAULT_DEV_SETTINGS = { detection: "live", source: "backend", prediction: "predict.json" };
 
 const DEV_MOCK_PRODUCT = {
   site: "amazon",
@@ -73,17 +74,28 @@ async function setUpDevPanel() {
   if (!IS_DEV_INSTALL) return;
   const settings = await loadDevSettings();
   const detectionSelect = $("dev-detection");
+  const sourceSelect = $("dev-source");
   const predictionSelect = $("dev-prediction");
   detectionSelect.value = settings.detection;
+  sourceSelect.value = settings.source;
   predictionSelect.value = settings.prediction;
+  // The mock file only matters in mock mode.
+  const syncMockFileState = () => { predictionSelect.disabled = sourceSelect.value !== "mock"; };
+  syncMockFileState();
   $("dev-panel").hidden = false;
 
   const onChange = async () => {
-    await saveDevSettings({ detection: detectionSelect.value, prediction: predictionSelect.value });
+    syncMockFileState();
+    await saveDevSettings({
+      detection: detectionSelect.value,
+      source: sourceSelect.value,
+      prediction: predictionSelect.value,
+    });
     run();
   };
-  detectionSelect.addEventListener("change", onChange);
-  predictionSelect.addEventListener("change", onChange);
+  for (const select of [detectionSelect, sourceSelect, predictionSelect]) {
+    select.addEventListener("change", onChange);
+  }
 }
 
 async function detectWithDevOverride(settings) {
@@ -92,9 +104,10 @@ async function detectWithDevOverride(settings) {
 }
 
 async function predictWithDevOverride(product, settings) {
+  if (settings.source !== "mock") return getPrediction(product);
   if (settings.prediction === "__loading") return new Promise(() => {});
   if (settings.prediction === "__error") throw new Error("Mock prediction failure");
-  return getPrediction(product, { mockFile: settings.prediction });
+  return getMockPrediction(settings.prediction);
 }
 
 // ---- Main flow ------------------------------------------------------------
@@ -106,6 +119,9 @@ function checkPrediction(prediction) {
   }
   if (!["high", "medium", "low"].includes(prediction.confidence)) {
     throw new Error(`Unexpected confidence: ${prediction.confidence}`);
+  }
+  if (!["real", "mixed", "simulated", "mock"].includes(prediction.data_source)) {
+    throw new Error(`Unexpected data_source: ${prediction.data_source}`);
   }
   return prediction;
 }
@@ -147,8 +163,8 @@ async function run() {
     renderRecommendation(prediction);
   } catch (err) {
     if (!isCurrent()) return;
-    console.error("[placeholder] prediction failed", err);
-    renderMessage("prediction_error");
+    console.error("[placeholder] prediction failed", err, err?.detail ?? "");
+    renderPredictionError(err);
   }
 }
 
