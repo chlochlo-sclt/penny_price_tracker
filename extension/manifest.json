@@ -11,7 +11,12 @@
   "content_scripts": [
     {
       "matches": ["https://www.amazon.com/*"],
-      "js": ["content/content.js"],
+      "js": [
+        "content/utils.js",
+        "content/extractors/generic.js",
+        "content/extractors/amazon.js",
+        "content/content.js"
+      ],
       "run_at": "document_idle"
     }
   ]

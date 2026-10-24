@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Secrets — never commit API keys (e.g. your Apify token)
+.env
+
+# Python (Aanvi's backend)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
