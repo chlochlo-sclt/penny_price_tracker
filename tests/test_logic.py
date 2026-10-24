@@ -143,3 +143,34 @@ def test_no_simulated_filler_when_there_is_enough_real_history(tmp_path):
     ensure_history("D", 40.0, path)
     h = get_history("D", path)
     assert set(h["source"]) == {"historical"} and history_source(h) == "real"
+
+
+# ---------------------------------------------------------------- storage backends
+
+def test_without_a_database_url_the_json_file_is_used(tmp_path, monkeypatch):
+    monkeypatch.delenv("TIGER_DATABASE_URL", raising=False)
+    monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
+    assert save_observations([_row("E", "2026-10-24T10:00:00Z", 10.0)]) == (1, 1)
+    assert len(get_history("E")) == 1
+    assert (tmp_path / "h.json").exists()
+
+
+def test_unreachable_database_falls_back_to_the_json_file(tmp_path, monkeypatch):
+    # a URL that cannot connect (or a missing driver) must never lose scraped data
+    monkeypatch.setenv("TIGER_DATABASE_URL", "postgresql://nobody:x@127.0.0.1:1/none")
+    monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
+    assert save_observations([_row("F", "2026-10-24T10:00:00Z", 10.0)]) == (1, 1)
+    assert len(get_history("F")) == 1
+    assert (tmp_path / "h.json").exists()
+
+
+def test_an_explicit_path_always_uses_json_even_with_a_database_url(tmp_path, monkeypatch):
+    monkeypatch.setenv("TIGER_DATABASE_URL", "postgresql://nobody:x@127.0.0.1:1/none")
+    path = tmp_path / "explicit.json"
+    assert save_observations([_row("G", "2026-10-24T10:00:00Z", 10.0)], path) == (1, 1)
+    assert path.exists()
+
+
+def test_database_rows_have_the_shape_the_store_expects():
+    rows = history_store._db_rows([_row("H", "2026-10-24T10:00:00Z", 12.5)])
+    assert rows == [("H", "2026-10-24T10:00:00Z", 12.5, "USD", "scraped", None, None)]
