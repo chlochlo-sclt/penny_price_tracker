@@ -226,10 +226,12 @@ function renderChanceLine(prediction, request) {
 /** Shows or hides the subtle "Updating…" state while the sliders' request runs. */
 function renderUpdating(isUpdating) {
   $("recommendation-card").classList.toggle("recommendation-card--updating", isUpdating);
-  const status = $("recommendation-status");
-  status.className = "recommendation-status";
-  status.textContent = isUpdating ? "Updating…" : "";
-  status.hidden = !isUpdating;
+  // A small badge floating inside the chance plate: it takes no space, so
+  // nothing below moves. sidepanel.css only shows it (and dims the result)
+  // if the request takes longer than 200 ms, so fast answers don't flash.
+  $("updating-indicator").textContent = isUpdating ? "updating…" : "";
+  // A finished request clears an earlier "couldn't update" line.
+  if (!isUpdating) $("recommendation-status").hidden = true;
 }
 
 /** A slider-triggered request failed: keep the last result, say it's out of date. */
@@ -292,6 +294,43 @@ function renderPriceRange(prediction, request) {
   $("price-range-today-label").textContent = `today ${formatMoney(today)}`;
 }
 
+/** "today", or "Nov 27" (lowercased by the CSS), for the line under the chance line. */
+function formatBestDayShort(isoDate) {
+  return isoDate === toIsoDate(new Date()) ? "today" : formatShortDate(parseIsoDate(isoDate));
+}
+
+/**
+ * The verdict, one word per line: "wait", or "buy" / "now", with a small
+ * "leaning" above either when confidence is low (so it doesn't read as
+ * certain). sidepanel.css gives the verdict a fixed height for the tallest
+ * case and centers shorter ones, so nothing below it moves. A short fade
+ * plays only when the verdict actually changes.
+ */
+function renderVerdict(verdict, isLeaning) {
+  const el = $("verdict");
+  const word = (className, text) => {
+    const span = document.createElement("span");
+    span.className = className;
+    span.textContent = text;
+    return span;
+  };
+  const parts = [
+    ...(isLeaning ? [word("verdict-leaning", "leaning")] : []),
+    ...verdict.split(" ").map((w) => word("verdict-word", w)),
+  ];
+  // Spaces between the lines keep the text "leaning buy now" for screen readers.
+  el.replaceChildren(...parts.flatMap((part, i) => (i ? [" ", part] : [part])));
+
+  const key = `${isLeaning ? "leaning " : ""}${verdict}`;
+  if (el.dataset.verdict && el.dataset.verdict !== key) {
+    el.classList.remove("verdict--changed");
+    void el.offsetWidth; // restart the fade
+    el.classList.add("verdict--changed");
+    el.addEventListener("animationend", () => el.classList.remove("verdict--changed"), { once: true });
+  }
+  el.dataset.verdict = key;
+}
+
 /** best_day is always set by the backend: today when buying now is best. */
 function formatBestDay(isoDate) {
   return isoDate === toIsoDate(new Date()) ? `today (${formatDay(isoDate)})` : formatDay(isoDate);
@@ -344,10 +383,9 @@ function renderRecommendation(prediction, request) {
   card.classList.add(`recommendation-card--${prediction.recommendation.replace("_", "-")}`);
   card.classList.toggle("recommendation-card--low-confidence", isLowConfidence);
 
-  // With low confidence the verdict is softened so it doesn't read as certain.
-  $("verdict").textContent = isLowConfidence ? `leaning ${verdict}` : verdict;
-
+  renderVerdict(verdict, isLowConfidence);
   renderChanceLine(prediction, request);
+  $("best-day-line").textContent = `best day to buy: ${formatBestDayShort(prediction.best_day)}`;
   renderUpdating(false);
 
   // Chips: the backend's confidence and data_source

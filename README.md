@@ -117,14 +117,14 @@ Chrome needs permission to show notifications: **System Settings → Notificatio
 The side panel follows the design in `student_shopping_assistant_chrome_extension_side_panel.html` (the 360×800 panel only), rebuilt as plain CSS with no remote scripts or fonts. Top to bottom:
 
 1. **Product line:** small, the title and the current price.
-2. **Verdict card:** the verdict in large, extra-bold Inter, with the penny coin. "wait" uses the text color, "buy now" emerald, and "leaning wait" or "leaning buy now" grey. Hovering the card tosses the coin.
-3. **Chance line:** from the backend's `p_drop`, the savings %, the dollar amount at today's price and the real date, e.g. "62% chance you'll save $115+ (10%) by nov 27."
+2. **Verdict card:** the verdict in large, extra-bold Inter, one word per line: "wait", "buy / now", or either with a small "leaning" above it. The box is always as tall as the tallest case, "leaning / buy / now", with shorter verdicts centered in it, so nothing below moves when the verdict changes. A short fade plays when it does change, except with reduced motion. The penny coin sits beside it. "wait" uses the text color, "buy now" emerald, and "leaning wait" or "leaning buy now" grey. Hovering the card tosses the coin.
+3. **Chance line:** with "best day to buy: …" under it, from the backend's `best_day` ("today" when that's today, e.g. on buy now). The chance line comes from the backend's `p_drop`, the savings %, the dollar amount at today's price and the real date, e.g. "62% chance you'll save $115+ (10%) by nov 27."
 4. **Sliders card:** "when do you need it by?" takes any day from 1 to 90; its tag shows the real date, plus "· black friday", "· halloween", "· christmas" or "· new year's day" within 2 days of that holiday, for any year. "how much do you want to save?" runs from 1% to 30% on a copper → silver → gold track.
 5. **One button:** "wait & watch" saves a watch, then reads "watching" (click again to stop) or "update watch" if the sliders have changed. When the verdict is buy now, it reads "buy now at $X" and scrolls the page to Amazon's own buy button.
 6. **Chips:** the backend's confidence and data source ("real price data", "partly simulated data", "simulated data", "mock data"), plus **why?** to expand the backend's explanation, typical drop and best day.
 7. **Details:** collapsible. It holds the likely price range bar (from `interval_low_usd` to `interval_high_usd`, with today's price and the most likely lowest price marked) and the real watch list.
 8. **Dev tools:** collapsed, and hidden entirely in Demo mode.
-9. **Brand mark:** "penny" at the very bottom, one small white circle per letter with a gray outline, built in HTML/CSS (screen readers hear "penny").
+9. **Brand mark:** "penny" at the very bottom, one small bronze circle per letter, colored like the coin, built in HTML/CSS (screen readers hear "penny").
 
 All text is lowercase (CSS `text-transform`), including product titles and the backend's explanation. Everything uses Inter, bundled in `extension/fonts/` with its SIL Open Font License file. The hierarchy comes from weight and size: the verdict is 800, slider labels 600, and body text 400.
 
@@ -132,7 +132,7 @@ The deadline's season sets the whole panel: three slowly drifting blurred blobs 
 
 The coin rests tilted about 30°, so both its face ("p", in Inter bold) and its edge show. Five stacked rim discs give it visible thickness. The "p" is nudged up slightly, because its descender makes it look low when it's exactly centered. Adjust that with `--coin-letter-offset` on `.coin-stage` in `sidepanel.css` (default `-0.07em`; more negative raises it).
 
-The brand mark's letter case is set in a single rule, `text-transform` on `.brand-mark` in `sidepanel.css`; change it to `uppercase` for "PENNY". Its colors are `--brand-key-*` (white circles with gray outlines and letters, the same in every season).
+The brand mark's letter case is set in a single rule, `text-transform` on `.brand-mark` in `sidepanel.css`; change it to `uppercase` for "PENNY". Its colors are `--brand-key-*`, which point at the coin's colors, so the mark is bronze in every season.
 
 ### Where the colors live
 

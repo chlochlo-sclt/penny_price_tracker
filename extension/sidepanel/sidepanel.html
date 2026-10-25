@@ -58,7 +58,11 @@
         </section>
 
         <!-- 3. Chance line (render.js), plus small status lines. -->
-        <p class="chance-line" id="recommendation-result"></p>
+        <div class="chance-plate">
+          <span class="updating-indicator" id="updating-indicator" role="status"></span>
+          <p class="chance-line" id="recommendation-result"></p>
+          <p class="best-day-line" id="best-day-line"></p>
+        </div>
         <p class="recommendation-status" id="recommendation-status" aria-live="polite" hidden></p>
         <p class="history-notice" id="history-notice" aria-live="polite" hidden>
           <span class="history-notice-spinner" aria-hidden="true"></span>
@@ -229,7 +233,7 @@
         </div>
       </details>
 
-      <!-- 9. Brand mark: one white circle per letter. Screen readers get
+      <!-- 9. Brand mark: one bronze circle per letter. Screen readers get
            just "penny"; the letters' case is set in one rule (.brand-mark). -->
       <p class="brand-mark" role="img" aria-label="penny">
         <span class="brand-mark-key" aria-hidden="true">p</span>

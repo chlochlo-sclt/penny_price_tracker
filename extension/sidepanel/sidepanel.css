@@ -150,11 +150,11 @@
   --mesh-blob-opacity: 0.6;
   --mesh-blur: 64px;
 
-  /* "penny" brand mark at the bottom: white circles, gray outline and letters.
-     The same in every season, including December's dark mode. */
-  --brand-key-border: #9ca3af;
-  --brand-key-text: #4b5563;
-  --brand-key-background: #ffffff;
+  /* "penny" brand mark at the bottom: little bronze coins, like the verdict
+     card's coin. The same in every season, including December's dark mode. */
+  --brand-key-border: var(--coin-face-dark);
+  --brand-key-text: var(--coin-letter);
+  --brand-key-background: radial-gradient(circle at 35% 30%, var(--coin-face-light), #dd9156 75%);
 
   /* Color fades while dragging. 0s with prefers-reduced-motion (below). */
   --color-transition-duration: 0.7s;
@@ -384,7 +384,7 @@ body {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass,
   .product-line,
-  .chance-line {
+  .chance-plate {
     background: var(--glass-background-solid);
   }
 }
@@ -489,11 +489,41 @@ body {
   gap: 14px;
 }
 
-/* While a slider-triggered request runs, dim the result but keep it readable. */
+/* While a slider-triggered request runs, dim the result, but only once it
+   has taken 200 ms: fast answers then change the card without any flash.
+   Coming back is immediate. Nothing here changes the layout. */
 .recommendation-card--updating .verdict,
-.recommendation-card--updating .chance-line {
+.recommendation-card--updating .chance-line,
+.recommendation-card--updating .best-day-line {
   opacity: 0.55;
-  transition: opacity 0.15s;
+  transition: opacity 0.2s ease 0.2s;
+}
+
+/* "updating…" floats in the chance plate's corner (no layout space). */
+.updating-indicator {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--chip-background);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.recommendation-card--updating .updating-indicator {
+  opacity: 1;
+  transition: opacity 0.2s ease 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recommendation-card--updating .verdict,
+  .recommendation-card--updating .chance-line,
+  .recommendation-card--updating .best-day-line,
+  .recommendation-card--updating .updating-indicator { transition: opacity 0s linear 0.2s; }
 }
 
 /* ---- 2. Verdict card and coin ---- */
@@ -508,14 +538,54 @@ body {
   cursor: default;
 }
 
+/* One word per line, in a box as tall as the tallest verdict ("leaning" /
+   "buy" / "now"). Shorter verdicts are centered in it, so the cards below
+   never move when the verdict changes. */
 .verdict {
+  --verdict-size: clamp(38px, 12vw, 48px);
+  --verdict-line-height: 1.05;
+  --verdict-leaning-size: 15px;
+  --verdict-leaning-line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  /* + 4px absorbs line-height rounding at narrow widths. */
+  height: calc(var(--verdict-leaning-size) * var(--verdict-leaning-line-height) + var(--verdict-size) * var(--verdict-line-height) * 2 + 4px);
   margin: 0;
-  font-size: clamp(38px, 12vw, 48px);
+  font-size: var(--verdict-size);
   font-weight: 800;
-  line-height: 1.05;
+  line-height: var(--verdict-line-height);
   letter-spacing: -0.03em;
   color: var(--verdict-wait);
   transition: color var(--color-transition-duration);
+}
+
+.verdict-leaning {
+  font-size: var(--verdict-leaning-size);
+  font-weight: 600;
+  line-height: var(--verdict-leaning-line-height);
+  letter-spacing: 0;
+}
+
+.verdict-word {
+  display: block;
+}
+
+/* Plays when the verdict changes (render.js). */
+.verdict--changed {
+  animation: verdict-fade 0.25s ease-out;
+}
+
+/* Starts partly visible, so a change reads as a soft settle, not a blink. */
+@keyframes verdict-fade {
+  from { opacity: 0.35; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict--changed { animation: none; }
 }
 
 .recommendation-card--buy-now .verdict { color: var(--verdict-buy); }
@@ -622,15 +692,28 @@ body {
 
 /* ---- 3. Chance line and small status lines ---- */
 
-.chance-line {
-  margin: 0;
+/* The chance line and the best-day line share one soft glass plate, so both
+   stay readable over any blob, in every season. */
+.chance-plate {
+  position: relative;
   padding: 8px 12px;
   border-radius: 12px;
-  font-size: 15px;
-  line-height: 1.5;
   background: var(--glass-background-soft);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
+}
+
+.chance-line {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.best-day-line {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .chance-line-pct,
@@ -1233,7 +1316,7 @@ body {
 }
 
 /* ==========================================================================
-   9. "penny" brand mark: one small white circle per letter
+   9. "penny" brand mark: one small bronze circle per letter
    ========================================================================== */
 
 .brand-mark {
