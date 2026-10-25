@@ -9,6 +9,6 @@
   "predicted_low_usd": 106.49,
   "confidence": "medium",
   "best_day": "2026-11-27",
-  "explanation": "Prices for this item usually dip around Black Friday. There is a 72% chance the price drops about 12% within the next five weeks.",
+  "explanation": "Wait: there is a 72% chance the price falls at least 5% (to about $113.99 or lower) within 34 days, which meets your 65% confidence level. The lowest price most often comes around Nov 27.",
   "data_source": "simulated"
 }

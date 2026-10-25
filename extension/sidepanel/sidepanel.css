@@ -4,21 +4,15 @@
    and coins are blended by theme.js, which only picks palettes. */
 
 /* ==========================================================================
-   Fonts (bundled in extension/fonts, SIL Open Font License)
+   Font: Inter for everything (bundled in extension/fonts, SIL Open Font
+   License). Hierarchy comes from weight and size: verdict 800, slider
+   labels 600, body 400.
    ========================================================================== */
 
 @font-face {
   font-family: "Inter";
   src: url("../fonts/inter-latin-variable.woff2") format("woff2");
   font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Caveat";
-  src: url("../fonts/caveat-latin-variable.woff2") format("woff2");
-  font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
@@ -156,6 +150,12 @@
   --mesh-blob-opacity: 0.6;
   --mesh-blur: 64px;
 
+  /* "penny" brand mark at the bottom: white circles, gray outline and letters.
+     The same in every season, including December's dark mode. */
+  --brand-key-border: #9ca3af;
+  --brand-key-text: #4b5563;
+  --brand-key-background: #ffffff;
+
   /* Color fades while dragging. 0s with prefers-reduced-motion (below). */
   --color-transition-duration: 0.7s;
 }
@@ -194,6 +194,7 @@
   --range-band: rgb(251 191 36 / 0.75);
   --range-today: #ffffff;
   --range-predicted: #fde68a;
+
 
   --mesh-dark-base: #0b1329;
 }
@@ -509,11 +510,10 @@ body {
 
 .verdict {
   margin: 0;
-  font-family: "Caveat", cursive;
-  font-size: clamp(48px, 15vw, 60px);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.01em;
+  font-size: clamp(38px, 12vw, 48px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   color: var(--verdict-wait);
   transition: color var(--color-transition-duration);
 }
@@ -527,6 +527,10 @@ body {
 .coin-stage {
   --coin-size: 46px;
   --coin-rest: rotateY(30deg) rotateX(12deg);
+  /* The "p" is boxed-centered, but its descender makes it look low, so it's
+     nudged up. In em of the letter, so it scales with the coin (about 1.6px
+     at 46px). Make it more negative to raise the "p" further. */
+  --coin-letter-offset: -0.07em;
   position: relative;
   flex: none;
   display: grid;
@@ -559,12 +563,16 @@ body {
   border: 2px solid var(--coin-face-ring);
   background: radial-gradient(circle at 35% 30%, var(--coin-face-light), var(--coin-face) 55%, var(--coin-face-dark));
   box-shadow: inset 0 0 0 3px rgb(94 42 12 / 0.35);
-  font-family: "Inter", sans-serif;
   font-size: calc(var(--coin-size) * 0.5);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   color: var(--coin-letter);
   backface-visibility: hidden;
+}
+
+.coin-letter {
+  display: block;
+  transform: translateY(var(--coin-letter-offset));
 }
 
 .coin-face--front { transform: translateZ(3px); }
@@ -680,10 +688,10 @@ body {
 }
 
 .slider-control-label {
-  font-family: "Caveat", cursive;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.1;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 
 .slider-tag {
@@ -905,6 +913,13 @@ body {
 .why-panel {
   margin-top: -6px;
   padding: 14px 16px;
+}
+
+.why-panel-source {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .why-panel-explanation {
@@ -1144,8 +1159,15 @@ body {
    8. Dev tools
    ========================================================================== */
 
+/* Dev tools and the brand mark; the auto top margin pins them to the
+   bottom of the panel, even when Demo mode hides the dev tools. */
+.panel-footer {
+  margin-top: auto;
+  padding: 0 16px 14px;
+}
+
 .dev-panel {
-  margin: auto 16px 16px; /* auto top margin pushes it to the panel's bottom */
+  margin-bottom: 14px;
   padding: 10px 14px;
   font-size: 12px;
 }
@@ -1176,6 +1198,11 @@ body {
   margin-top: 10px;
 }
 
+.dev-panel-range {
+  width: 50%;
+  accent-color: var(--text);
+}
+
 .dev-panel-select {
   max-width: 60%;
   font-size: 12px;
@@ -1203,4 +1230,31 @@ body {
 .dev-panel-status {
   margin: 8px 0 0;
   color: var(--text-muted);
+}
+
+/* ==========================================================================
+   9. "penny" brand mark: one small white circle per letter
+   ========================================================================== */
+
+.brand-mark {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  margin: 0;
+  /* The mark's letter case, in one place: change to uppercase for "PENNY". */
+  text-transform: lowercase;
+}
+
+.brand-mark-key {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--brand-key-border);
+  border-radius: 50%;
+  background: var(--brand-key-background);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--brand-key-text);
 }

@@ -31,7 +31,7 @@ extension/
   background/
     background.js          Service worker: alarm, price checks, notifications
   icons/                   Coin icon: penny.svg / penny-small.svg sources, exported PNGs, export-icons.sh
-  fonts/                   Inter and Caveat (variable, Latin) with their OFL license files
+  fonts/                   Inter (variable, Latin) with its OFL license file
   content/                 Runs inside amazon.com pages
     utils.js               parsePrice, detectCurrency, cleanText
     extractors/generic.js  schema.org Product reader (JSON-LD, microdata, meta tags)
@@ -67,9 +67,14 @@ To add a store (e.g. Target), write `content/extractors/target.js`, add it and t
 The side panel calls `POST http://127.0.0.1:8000/predict` with `{ ...product, preferences }`. The request comes from the side panel, not the content script, and the request and response shapes are defined in `app/schemas.py`.
 
 - **Backend URL:** `API_BASE_URL` in `shared/config.js`. If you change it, also update `host_permissions` in `manifest.json`, or Chrome will block the request.
-- **Preferences:** `getPreferences()` in `sidepanel/api.js` sends `min_savings_pct` (1–30 from the slider; the backend allows 1–50), `deadline_days` (1–90), and `min_confidence_pct` fixed at 65. The schema leaves `min_confidence_pct` unset by default, and the backend then uses 65 (`DEFAULTS` in `app/decision.py`). `risk_tolerance` isn't sent, since it's only a shortcut for `min_confidence_pct`. If storage is empty or broken, the sliders default to 5% and 14 days.
-- **Response extras:** `predicted_low_usd` (the most likely lowest price) is a diamond on the price bar. `best_day` is always set, and shows as "Today" when buying now is best.
-- **Real price history (`history_status`):** with no real history yet, the backend answers from labeled simulated history with `"fetching"` and loads real history in the background. The panel shows that forecast with "Loading real price history…" and asks again every 30 seconds, at most 4 times (`HISTORY_RETRY` in `sidepanel/sidepanel.js`), then says it couldn't load real history yet. Switching tabs or products, or closing the panel, cancels the retries. A slider move cancels a pending retry, and its own answer schedules the next one. `"failed"` shows the same "couldn't load" note; `"ready"` and `"unavailable"` show nothing. Older backends that don't send the field are treated as `"ready"`.
+- **Preferences:** `getPreferences()` in `sidepanel/api.js` sends `min_savings_pct` (1–30 from the slider; the backend allows 1–50), `deadline_days` (1–90), and `min_confidence_pct` at 65 (dev tools can override it, 50–95). The schema leaves `min_confidence_pct` unset by default, and the backend then uses 65 (`DEFAULTS` in `app/decision.py`). `risk_tolerance` isn't sent, since it's only a shortcut for `min_confidence_pct`. If storage is empty or broken, the sliders default to 5% and 14 days.
+- **Response extras:** `predicted_low_usd` (the most likely lowest price) is a diamond on the price bar. `best_day` is always set, and shows as "today" when buying now is best. The expected drop (`expected_drop_pct` / `expected_drop_usd`) appears in "why?" only on a wait card. Next to the most likely lowest price on a buy-now card, the two looked contradictory.
+- **Data source:** the chip always shows `data_source`. For `"simulated"`, `"mixed"` and `"mock"`, "why?" starts with a line saying what the numbers are based on, and the history note says the same. Neither implies real price history when there isn't any.
+- **Real price history (`history_status`):**
+  - `"ready"`: no note.
+  - `"fetching"`: the backend answered from labeled simulated history and is fetching real history in the background. The panel shows that forecast with "loading real price history…". Every 30 seconds it polls the cheap `GET /history-status/{product_id}`, at most 4 times (`HISTORY_RETRY` in `sidepanel/sidepanel.js`), and re-requests `/predict` only once the status changes from `"fetching"`. After the limit, it says it couldn't load real history yet. A backend without that endpoint (a 404) falls back to re-requesting `/predict`. Switching tabs or products, or closing the panel, cancels polling. A slider move cancels a pending poll, and its own answer starts polling again if needed.
+  - `"failed"` / `"unavailable"`: a small note that real price history isn't available for this item, plus what the estimate is based on. The result and its data-source chip stay.
+  - Older backends that don't send the field are treated as `"ready"`.
 - **Current price for watches:** `getCurrentPrice(watch)` in `background/background.js` calls `GET /price/{product_id}` and expects `{ "price": 123.45 }`. That endpoint doesn't exist yet; until it does, checks are skipped quietly (and so are price-drop notifications from real checks).
 - **Errors:** requests time out after 10 seconds. The panel shows separate messages for a backend that isn't running, a timeout, a 422 (with the backend's own message, e.g. "Only USD prices are supported right now."), and any other failure, with a **Try again** button.
 
@@ -87,11 +92,13 @@ Unpacked installs show a **Dev tools** section at the bottom of the side panel w
 
 - **Product:** use the real current tab ("Live"), or fake a detection result: product found, price not found, item unavailable, not a product page, unsupported site, or detection error.
 - **Data source:** **Backend** (default) calls `/predict`; **Mock** skips the backend and uses the mock file below.
-- **Mock file:** pick a file from `mock/` (`predict.json`, `predict_wait.json`, `predict_buy_now.json`, `predict_low_confidence.json`, `predict_not_enough_data.json`, `predict_fetching.json`), "fetching, then real history on retry", a request that never finishes (loading state), or one that fails (error state). Every mock matches `PredictResponse` in `app/schemas.py`.
+- **Mock file:** pick a file from `mock/` (`predict.json`, `predict_wait.json`, `predict_buy_now.json`, `predict_low_confidence.json`, `predict_not_enough_data.json`, `predict_fetching.json`, `predict_unavailable.json`), "fetching, then real history on retry", a request that never finishes (loading state), or one that fails (error state). Every mock matches `PredictResponse` in `app/schemas.py`.
 
 Below the dropdowns, **Watched item** with **Simulate price drop** and **Simulate deadline approaching** runs the background worker's real notification code with a faked price or date. Simulating resets the item's "already notified" flags, so you can repeat the demo.
 
 The dropdown choices are saved in `chrome.storage.local` and kept between panel openings. Dev tools start collapsed, and are hidden automatically for Chrome Web Store installs.
+
+**Min confidence** overrides `min_confidence_pct` (default 65, the backend's default). The schema only accepts 50–95, so the slider stops there; 25 would be rejected with a 422. It's saved with the other dev settings. To demo a wait verdict: AirPods Pro 2 (`B0BDHWDR12`) with a 3% savings goal and a 35-day deadline is "buy now" at 65 (a 59% chance) and "wait" at 50.
 
 **Demo mode** (checkbox at the top of Dev tools) hides the dev tools completely, for judging, and is remembered. Any mock settings you picked stay in effect. To bring the dev tools back, press **Alt+Shift+D** (Option+Shift+D on a Mac) with the panel focused, or click the coin 5 times.
 
@@ -110,19 +117,22 @@ Chrome needs permission to show notifications: **System Settings → Notificatio
 The side panel follows the design in `student_shopping_assistant_chrome_extension_side_panel.html` (the 360×800 panel only), rebuilt as plain CSS with no remote scripts or fonts. Top to bottom:
 
 1. **Product line:** small, the title and the current price.
-2. **Verdict card:** the verdict in Caveat, with the penny coin. "wait" uses the text color, "buy now" emerald, and "leaning wait" or "leaning buy now" grey. Hovering the card tosses the coin.
+2. **Verdict card:** the verdict in large, extra-bold Inter, with the penny coin. "wait" uses the text color, "buy now" emerald, and "leaning wait" or "leaning buy now" grey. Hovering the card tosses the coin.
 3. **Chance line:** from the backend's `p_drop`, the savings %, the dollar amount at today's price and the real date, e.g. "62% chance you'll save $115+ (10%) by nov 27."
 4. **Sliders card:** "when do you need it by?" takes any day from 1 to 90; its tag shows the real date, plus "· black friday", "· halloween", "· christmas" or "· new year's day" within 2 days of that holiday, for any year. "how much do you want to save?" runs from 1% to 30% on a copper → silver → gold track.
 5. **One button:** "wait & watch" saves a watch, then reads "watching" (click again to stop) or "update watch" if the sliders have changed. When the verdict is buy now, it reads "buy now at $X" and scrolls the page to Amazon's own buy button.
 6. **Chips:** the backend's confidence and data source ("real price data", "partly simulated data", "simulated data", "mock data"), plus **why?** to expand the backend's explanation, typical drop and best day.
 7. **Details:** collapsible. It holds the likely price range bar (from `interval_low_usd` to `interval_high_usd`, with today's price and the most likely lowest price marked) and the real watch list.
 8. **Dev tools:** collapsed, and hidden entirely in Demo mode.
+9. **Brand mark:** "penny" at the very bottom, one small white circle per letter with a gray outline, built in HTML/CSS (screen readers hear "penny").
 
-All text is lowercase (CSS `text-transform`), including product titles and the backend's explanation. Inter and Caveat are bundled in `extension/fonts/`, with their SIL Open Font License files.
+All text is lowercase (CSS `text-transform`), including product titles and the backend's explanation. Everything uses Inter, bundled in `extension/fonts/` with its SIL Open Font License file. The hierarchy comes from weight and size: the verdict is 800, slider labels 600, and body text 400.
 
 The deadline's season sets the whole panel: three slowly drifting blurred blobs behind frosted glass cards (nearly solid cards where `backdrop-filter` isn't supported), blending smoothly between neighboring seasons. December is a dark, high-contrast theme. That switch is deliberately discrete rather than blended, because a half-dark background would leave text on mid-gray. The product line and chance line sit on soft glass plates too, so they stay readable over any blob. With **prefers-reduced-motion**, the blobs don't drift, the coin doesn't toss, and colors switch without fading.
 
-The coin rests tilted about 30°, so both its face ("p") and its edge show. Five stacked rim discs give it visible thickness.
+The coin rests tilted about 30°, so both its face ("p", in Inter bold) and its edge show. Five stacked rim discs give it visible thickness. The "p" is nudged up slightly, because its descender makes it look low when it's exactly centered. Adjust that with `--coin-letter-offset` on `.coin-stage` in `sidepanel.css` (default `-0.07em`; more negative raises it).
+
+The brand mark's letter case is set in a single rule, `text-transform` on `.brand-mark` in `sidepanel.css`; change it to `uppercase` for "PENNY". Its colors are `--brand-key-*` (white circles with gray outlines and letters, the same in every season).
 
 ### Where the colors live
 
@@ -134,6 +144,7 @@ Every color is a custom property in the "Colors" section of `extension/sidepanel
 - **Seasons:** `--season-<name>-1/-2/-3` (the three blobs; `-1` also fills the date slider) and `--season-<name>-base` (light background) for `early-fall`, `halloween`, `november`, `winter`, `christmas`, `new-year`, `late-winter`, `late-winter-pink`, `spring` and `summer`. The dark background is `--mesh-dark-base`.
 - **Savings track:** `--coin-track-start`, `--coin-copper-*`, `--coin-silver-*`, `--coin-gold-*`.
 - **Coin:** `--coin-face*`, `--coin-rim-*`, `--coin-letter`.
+- **Brand mark:** `--brand-key-border`, `--brand-key-text`, `--brand-key-background`.
 - **Price bar:** `--range-*`.
 - **Mesh and glass:** `--mesh-blob-opacity`, `--mesh-blur`, `--glass-background*`, `--glass-blur`.
 - **Fade speed:** `--color-transition-duration`.
@@ -158,4 +169,5 @@ sh extension/icons/export-icons.sh
 - the panel at each holiday deadline: `date-halloween`, `date-black-friday`, `date-christmas`, `date-new-year`;
 - the top of the panel in every season: `season-*`;
 - the coin at rest and mid-toss: `coin-rest`, `coin-toss`;
+- the brand mark in light and dark mode: `brand-mark-light`, `brand-mark-dark`;
 - the icons at every size: `icons`.

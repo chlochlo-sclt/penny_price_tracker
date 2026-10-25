@@ -299,19 +299,34 @@ function formatBestDay(isoDate) {
 
 // The small line under the chance line about real price history, keyed by
 // the state sidepanel.js tracks (see HISTORY_RETRY there).
+//   fetching       real history is loading
+//   gave_up        still loading after the poll limit, or a re-request failed
+//   not_available  history_status "failed" or "unavailable"
 const HISTORY_NOTICES = {
-  fetching: "Loading real price history…",
-  gave_up: "Couldn't load real history yet. This estimate uses simulated prices.",
-  failed: "Couldn't load real history yet. This estimate uses simulated prices.",
+  fetching: "loading real price history…",
+  gave_up: "couldn't load real price history yet.",
+  not_available: "real price history isn't available for this item.",
 };
 
-/** Shows or hides the history notice; `state` is a HISTORY_NOTICES key or null. */
-function renderHistoryNotice(state) {
+/**
+ * What the numbers are based on, for anything that isn't all real history.
+ * Used by the history note and the "why?" panel, so neither implies the
+ * numbers come from real prices when they don't.
+ */
+const DATA_SOURCE_NOTES = {
+  mixed: "this estimate mixes some real prices with simulated ones.",
+  simulated: "this estimate uses simulated prices, not real price history.",
+  mock: "these are mock numbers for testing.",
+};
+
+/** Shows or hides the history note; `state` is a HISTORY_NOTICES key or null. */
+function renderHistoryNotice(state, dataSource = null) {
   const notice = $("history-notice");
   const text = HISTORY_NOTICES[state];
   notice.hidden = !text;
   notice.className = `history-notice history-notice--${state === "fetching" ? "fetching" : "unavailable"}`;
-  $("history-notice-text").textContent = text ?? "";
+  const sourceNote = state === "fetching" ? null : DATA_SOURCE_NOTES[dataSource];
+  $("history-notice-text").textContent = text ? (sourceNote ? `${text} ${sourceNote}` : text) : "";
 }
 
 /**
@@ -343,10 +358,21 @@ function renderRecommendation(prediction, request) {
   sourceEl.textContent = DATA_SOURCE_LABELS[prediction.data_source];
   sourceEl.className = `chip chip--source chip--source-${prediction.data_source}`;
 
-  // "why?" panel: the backend's own explanation
+  // "why?" panel: the backend's own explanation, preceded by what it's based
+  // on when that isn't all real price history (the backend's wording, e.g.
+  // "comparable past windows", reads as real history otherwise).
+  const sourceNote = DATA_SOURCE_NOTES[prediction.data_source];
+  $("why-source-note").hidden = !sourceNote;
+  $("why-source-note").textContent = sourceNote ?? "";
   $("explanation").textContent = prediction.explanation ?? "";
-  $("expected-savings").textContent =
-    `${formatPercent(prediction.expected_drop_pct)} (${formatMoney(prediction.expected_drop_usd)})`;
+  // On buy now, the expected drop next to the most likely lowest price looks
+  // contradictory, so only a wait card shows it.
+  const isWait = prediction.recommendation === "wait";
+  $("expected-savings-row").hidden = !isWait;
+  if (isWait) {
+    $("expected-savings").textContent =
+      `${formatPercent(prediction.expected_drop_pct)} (${formatMoney(prediction.expected_drop_usd)})`;
+  }
   $("best-day").textContent = formatBestDay(prediction.best_day);
 
   showView("recommendation-card");

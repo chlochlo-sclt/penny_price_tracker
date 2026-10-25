@@ -39,7 +39,7 @@
       </section>
 
       <article class="recommendation-card" id="recommendation-card" hidden>
-        <!-- 2. Verdict (Caveat) and the penny coin. Hovering the card tosses
+        <!-- 2. Verdict and the penny coin. Hovering the card tosses
              the coin; clicking the coin 5 times leaves Demo mode. -->
         <section class="verdict-card glass" aria-label="recommendation">
           <h2 class="verdict" id="verdict"></h2>
@@ -51,8 +51,8 @@
               <span class="coin-rim coin-rim--3"></span>
               <span class="coin-rim coin-rim--4"></span>
               <span class="coin-rim coin-rim--5"></span>
-              <span class="coin-face coin-face--back">p</span>
-              <span class="coin-face coin-face--front">p</span>
+              <span class="coin-face coin-face--back"><span class="coin-letter">p</span></span>
+              <span class="coin-face coin-face--front"><span class="coin-letter">p</span></span>
             </div>
           </div>
         </section>
@@ -104,9 +104,10 @@
           <button class="why-toggle" id="why-toggle" type="button" aria-expanded="false" aria-controls="why-panel">why?</button>
         </div>
         <section class="why-panel glass" id="why-panel" aria-label="why this recommendation" hidden>
+          <p class="why-panel-source" id="why-source-note" hidden></p>
           <p class="why-panel-explanation" id="explanation"></p>
           <dl class="why-panel-facts">
-            <div class="why-panel-fact">
+            <div class="why-panel-fact" id="expected-savings-row">
               <dt class="why-panel-fact-label">typical drop, when it drops</dt>
               <dd class="why-panel-fact-value" id="expected-savings"></dd>
             </div>
@@ -165,60 +166,79 @@
       </li>
     </template>
 
-    <!-- 8. Dev tools: unpacked installs only, collapsed by default, and hidden
-         entirely in Demo mode (see sidepanel.js). -->
-    <details class="dev-panel glass" id="dev-panel" hidden>
-      <summary class="dev-panel-summary">dev tools</summary>
-      <label class="dev-panel-toggle">
-        <input type="checkbox" id="dev-demo-mode">
-        <span>demo mode: hide dev tools</span>
-      </label>
-      <p class="dev-panel-hint">to show them again, press alt+shift+d in the panel or click the coin 5 times.</p>
-      <label class="dev-panel-field">
-        <span class="dev-panel-label">product</span>
-        <select class="dev-panel-select" id="dev-detection">
-          <option value="live">live: ask the current tab</option>
-          <option value="ok">mock: product found</option>
-          <option value="price_not_found">mock: price not found</option>
-          <option value="unavailable">mock: item unavailable</option>
-          <option value="not_product_page">mock: not a product page</option>
-          <option value="no_content_script">mock: unsupported site</option>
-          <option value="error">mock: detection error</option>
-        </select>
-      </label>
-      <label class="dev-panel-field">
-        <span class="dev-panel-label">data source</span>
-        <select class="dev-panel-select" id="dev-source">
-          <option value="backend">backend (post /predict)</option>
-          <option value="mock">mock (file below)</option>
-        </select>
-      </label>
-      <label class="dev-panel-field">
-        <span class="dev-panel-label">mock file</span>
-        <select class="dev-panel-select" id="dev-prediction">
-          <option value="predict.json">predict.json</option>
-          <option value="predict_wait.json">predict_wait.json</option>
-          <option value="predict_buy_now.json">predict_buy_now.json</option>
-          <option value="predict_low_confidence.json">predict_low_confidence.json</option>
-          <option value="predict_not_enough_data.json">predict_not_enough_data.json</option>
-          <option value="predict_fetching.json">predict_fetching.json (stays fetching)</option>
-          <option value="__fetching_then_ready">fetching, then real history on retry</option>
-          <option value="__loading">never finishes (loading)</option>
-          <option value="__error">request fails (error)</option>
-        </select>
-      </label>
-      <div class="dev-panel-group">
-        <label class="dev-panel-field">
-          <span class="dev-panel-label">watched item</span>
-          <select class="dev-panel-select" id="dev-watch"></select>
+    <!-- Bottom of the panel: dev tools, then the brand mark. -->
+    <footer class="panel-footer">
+      <!-- 8. Dev tools: unpacked installs only, collapsed by default, and hidden
+           entirely in Demo mode (see sidepanel.js). -->
+      <details class="dev-panel glass" id="dev-panel" hidden>
+        <summary class="dev-panel-summary">dev tools</summary>
+        <label class="dev-panel-toggle">
+          <input type="checkbox" id="dev-demo-mode">
+          <span>demo mode: hide dev tools</span>
         </label>
-        <div class="dev-panel-buttons">
-          <button class="dev-panel-button" id="dev-simulate-drop" type="button">simulate price drop</button>
-          <button class="dev-panel-button" id="dev-simulate-deadline" type="button">simulate deadline approaching</button>
+        <p class="dev-panel-hint">to show them again, press alt+shift+d in the panel or click the coin 5 times.</p>
+        <label class="dev-panel-field">
+          <span class="dev-panel-label">product</span>
+          <select class="dev-panel-select" id="dev-detection">
+            <option value="live">live: ask the current tab</option>
+            <option value="ok">mock: product found</option>
+            <option value="price_not_found">mock: price not found</option>
+            <option value="unavailable">mock: item unavailable</option>
+            <option value="not_product_page">mock: not a product page</option>
+            <option value="no_content_script">mock: unsupported site</option>
+            <option value="error">mock: detection error</option>
+          </select>
+        </label>
+        <label class="dev-panel-field">
+          <span class="dev-panel-label">data source</span>
+          <select class="dev-panel-select" id="dev-source">
+            <option value="backend">backend (post /predict)</option>
+            <option value="mock">mock (file below)</option>
+          </select>
+        </label>
+        <label class="dev-panel-field">
+          <span class="dev-panel-label">mock file</span>
+          <select class="dev-panel-select" id="dev-prediction">
+            <option value="predict.json">predict.json</option>
+            <option value="predict_wait.json">predict_wait.json</option>
+            <option value="predict_buy_now.json">predict_buy_now.json</option>
+            <option value="predict_low_confidence.json">predict_low_confidence.json</option>
+            <option value="predict_not_enough_data.json">predict_not_enough_data.json</option>
+            <option value="predict_fetching.json">predict_fetching.json (stays fetching)</option>
+            <option value="predict_unavailable.json">predict_unavailable.json (no real history)</option>
+            <option value="__fetching_then_ready">fetching, then real history on retry</option>
+            <option value="__loading">never finishes (loading)</option>
+            <option value="__error">request fails (error)</option>
+          </select>
+        </label>
+        <!-- Overrides min_confidence_pct (backend default 65; schema allows 50–95). -->
+        <label class="dev-panel-field">
+          <span class="dev-panel-label">min confidence <output id="dev-min-confidence-value"></output></span>
+          <input class="dev-panel-range" id="dev-min-confidence" type="range" min="50" max="95" step="1">
+        </label>
+        <div class="dev-panel-group">
+          <label class="dev-panel-field">
+            <span class="dev-panel-label">watched item</span>
+            <select class="dev-panel-select" id="dev-watch"></select>
+          </label>
+          <div class="dev-panel-buttons">
+            <button class="dev-panel-button" id="dev-simulate-drop" type="button">simulate price drop</button>
+            <button class="dev-panel-button" id="dev-simulate-deadline" type="button">simulate deadline approaching</button>
+          </div>
+          <p class="dev-panel-status" id="dev-simulate-status" aria-live="polite"></p>
         </div>
-        <p class="dev-panel-status" id="dev-simulate-status" aria-live="polite"></p>
-      </div>
-    </details>
+      </details>
+
+      <!-- 9. Brand mark: one white circle per letter. Screen readers get
+           just "penny"; the letters' case is set in one rule (.brand-mark). -->
+      <p class="brand-mark" role="img" aria-label="penny">
+        <span class="brand-mark-key" aria-hidden="true">p</span>
+        <span class="brand-mark-key" aria-hidden="true">e</span>
+        <span class="brand-mark-key" aria-hidden="true">n</span>
+        <span class="brand-mark-key" aria-hidden="true">n</span>
+        <span class="brand-mark-key" aria-hidden="true">y</span>
+      </p>
+    </footer>
   </div>
 
   <!-- MV3 blocks inline scripts. Order matters: each file may use the ones above it. -->

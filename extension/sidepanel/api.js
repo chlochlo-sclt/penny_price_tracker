@@ -54,22 +54,25 @@ async function scrollPageToBuyButton() {
 }
 
 // How sure the forecast must be before penny says "Wait". There's no UI for
-// it yet. app/schemas.py leaves min_confidence_pct unset (None), and the
-// backend then falls back to 65 (DEFAULTS in app/decision.py), so send 65.
+// it (dev tools can override it). app/schemas.py leaves min_confidence_pct
+// unset (None), and the backend then falls back to 65 (DEFAULTS in
+// app/decision.py), so send 65. The schema only accepts 50–95.
 const DEFAULT_MIN_CONFIDENCE_PCT = 65;
+const MIN_CONFIDENCE_RANGE = { min: 50, max: 95 };
 
 /**
  * The Preferences object for app/schemas.py, built from the slider values:
  *   min_savings_pct     1–50   only count drops at least this big (%)
- *   min_confidence_pct  50–95  fixed for now (see above)
+ *   min_confidence_pct  50–95  65 unless dev tools override it (see above)
  *   deadline_days       1–90   how long the shopper can wait
  * risk_tolerance (a shortcut for min_confidence_pct) isn't sent, because we
  * send the number itself.
  */
-function getPreferences({ min_savings_pct, deadline_days }) {
+function getPreferences({ min_savings_pct, deadline_days }, minConfidencePct = DEFAULT_MIN_CONFIDENCE_PCT) {
+  const confidence = Number.isFinite(Number(minConfidencePct)) ? Number(minConfidencePct) : DEFAULT_MIN_CONFIDENCE_PCT;
   return {
     min_savings_pct,
-    min_confidence_pct: DEFAULT_MIN_CONFIDENCE_PCT,
+    min_confidence_pct: Math.min(MIN_CONFIDENCE_RANGE.max, Math.max(MIN_CONFIDENCE_RANGE.min, confidence)),
     deadline_days,
   };
 }
@@ -168,6 +171,35 @@ async function getPrediction(product, preferences, options = {}) {
     options.signal?.removeEventListener("abort", cancel);
   }
 }
+
+/**
+ * The cheap poll while real history is being fetched:
+ * GET /history-status/{product_id} → { product_id, history_status }.
+ * Resolves with "ready" | "fetching" | "failed" | "unavailable", or null if
+ * the backend has no such endpoint (older backends) or the answer is odd.
+ * Rejects on network errors and timeouts, like getPrediction.
+ */
+async function getHistoryStatus(productId, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const cancel = () => controller.abort();
+  options.signal?.addEventListener("abort", cancel, { once: true });
+  try {
+    const response = await fetch(`${API_BASE_URL}/history-status/${encodeURIComponent(productId)}`, {
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const status = (await response.json())?.history_status;
+    return HISTORY_STATUSES.includes(status) ? status : null;
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener("abort", cancel);
+  }
+}
+
+// PredictResponse.history_status in app/schemas.py (also used by the
+// GET /history-status/{product_id} endpoint in app/main.py).
+const HISTORY_STATUSES = ["ready", "fetching", "failed", "unavailable"];
 
 /** Reads a file from mock/ instead of calling the backend (dev tools). */
 async function getMockPrediction(mockFile) {

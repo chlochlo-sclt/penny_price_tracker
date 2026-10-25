@@ -14,7 +14,13 @@ console.log("penny side panel opened");
 const IS_DEV_INSTALL = !globalThis.chrome?.runtime?.getManifest?.().update_url;
 const DEV_SETTINGS_KEY = "devSettings";
 // source: "backend" calls POST /predict; "mock" reads `prediction` from mock/.
-const DEFAULT_DEV_SETTINGS = { detection: "live", source: "backend", prediction: "predict.json" };
+// minConfidencePct overrides min_confidence_pct (see getPreferences in api.js).
+const DEFAULT_DEV_SETTINGS = {
+  detection: "live",
+  source: "backend",
+  prediction: "predict.json",
+  minConfidencePct: DEFAULT_MIN_CONFIDENCE_PCT,
+};
 
 const DEV_MOCK_PRODUCT = {
   site: "amazon",
@@ -56,9 +62,18 @@ async function setUpDevPanel() {
   const detectionSelect = $("dev-detection");
   const sourceSelect = $("dev-source");
   const predictionSelect = $("dev-prediction");
+  const confidenceInput = $("dev-min-confidence");
   detectionSelect.value = settings.detection;
   sourceSelect.value = settings.source;
   predictionSelect.value = settings.prediction;
+  confidenceInput.min = MIN_CONFIDENCE_RANGE.min;
+  confidenceInput.max = MIN_CONFIDENCE_RANGE.max;
+  confidenceInput.value = settings.minConfidencePct;
+  const showConfidence = () => {
+    $("dev-min-confidence-value").textContent = `${confidenceInput.value}%`;
+  };
+  showConfidence();
+  confidenceInput.addEventListener("input", showConfidence);
   // The mock file only matters in mock mode.
   const syncMockFileState = () => { predictionSelect.disabled = sourceSelect.value !== "mock"; };
   syncMockFileState();
@@ -70,11 +85,12 @@ async function setUpDevPanel() {
       detection: detectionSelect.value,
       source: sourceSelect.value,
       prediction: predictionSelect.value,
+      minConfidencePct: Number(confidenceInput.value),
     });
     run();
   };
-  for (const select of [detectionSelect, sourceSelect, predictionSelect]) {
-    select.addEventListener("change", onChange);
+  for (const control of [detectionSelect, sourceSelect, predictionSelect, confidenceInput]) {
+    control.addEventListener("change", onChange);
   }
 }
 
@@ -132,9 +148,6 @@ async function predictWithDevOverride(product, preferences, settings, signal) {
 
 // ---- Main flow ------------------------------------------------------------
 
-// PredictResponse.history_status in app/schemas.py.
-const HISTORY_STATUSES = ["ready", "fetching", "failed", "unavailable"];
-
 /**
  * Throws if the response doesn't have the fields the card needs. Returns it
  * with history_status filled in: the backend's default is "ready", and older
@@ -173,42 +186,88 @@ let currentSettings = DEFAULT_DEV_SETTINGS;
 let predictionController = null;
 
 // ---- Real price history ---------------------------------------------------
-// With no real history for a product yet, the backend answers right away
-// from labeled simulated history, with history_status "fetching", and fetches
-// real history in the background (app/live_fetch.py). That forecast is
-// usable, so the card shows it with a small "Loading real price history…"
-// notice, and asks again every 30 s until the status changes, at most 4 times.
+// history_status (app/schemas.py, app/live_fetch.py):
+//   "ready"        real history is stored; no note
+//   "fetching"     the backend answered from labeled simulated history and is
+//                  fetching real history in the background. The forecast is
+//                  usable, so the card shows it with "loading real price
+//                  history…" and polls the cheap GET /history-status every
+//                  30 s, at most 4 times. Only when the status stops being
+//                  "fetching" does it re-request /predict for the new answer.
+//   "failed"       the fetch found nothing (the backend retries later)
+//   "unavailable"  live fetching is off
+//                  → both: a small note that real history isn't available
+//                    for this item; the result and its data-source chip stay.
 //
-// There's only ever one timer. Any new request (a slider move, a retry)
-// cancels it first, and its own answer schedules the next one if needed.
-// resetProduct() (new product, tab switch) cancels it and resets the count.
+// There's only ever one timer and one poll. Any new request (a slider move,
+// the re-request) cancels them first, and its answer starts polling again if
+// needed. resetProduct() (new product, tab switch) cancels them and resets
+// the count; closing the panel cancels them too.
 
 const HISTORY_RETRY = { delayMs: 30_000, maxRetries: 4 };
 let historyRetryTimer = null;
-let historyRetries = 0; // retries used so far for currentProduct
+let historyPollController = null;
+let historyRetries = 0; // polls used so far for currentProduct
+let lastDataSource = null; // of the result on screen, for the note's wording
 
 function cancelHistoryRetry() {
   clearTimeout(historyRetryTimer);
   historyRetryTimer = null;
+  historyPollController?.abort();
+  historyPollController = null;
 }
 
-/** After a prediction renders: update the notice, and retry if still fetching. */
-function handleHistoryStatus(status) {
+/** The status poll, or a mock answer in mock mode (dev tools). */
+async function pollHistoryStatus(signal) {
+  if (currentSettings.source === "mock") {
+    // "fetching, then real history" turns ready on the first poll.
+    return currentSettings.prediction === "__fetching_then_ready" ? "ready" : "fetching";
+  }
+  return getHistoryStatus(currentProduct.product_id, { signal });
+}
+
+/** After a prediction renders: update the note, and poll if still fetching. */
+function handleHistoryStatus(status, dataSource) {
   cancelHistoryRetry();
+  lastDataSource = dataSource;
+  if (status === "failed" || status === "unavailable") {
+    renderHistoryNotice("not_available", dataSource);
+    return;
+  }
   if (status !== "fetching") {
-    renderHistoryNotice(status === "failed" ? "failed" : null);
+    renderHistoryNotice(null);
     return;
   }
+  renderHistoryNotice("fetching", dataSource);
+  scheduleHistoryPoll();
+}
+
+function scheduleHistoryPoll() {
   if (historyRetries >= HISTORY_RETRY.maxRetries) {
-    renderHistoryNotice("gave_up");
+    renderHistoryNotice("gave_up", lastDataSource);
     return;
   }
-  renderHistoryNotice("fetching");
-  historyRetryTimer = setTimeout(() => {
+  historyRetryTimer = setTimeout(async () => {
     historyRetryTimer = null;
     historyRetries += 1;
-    console.log(`penny history still fetching: retry ${historyRetries} of ${HISTORY_RETRY.maxRetries}`);
-    requestPrediction(PreferenceSliders.getValues(), { initial: false, retry: true });
+    const controller = (historyPollController = new AbortController());
+    let status;
+    try {
+      status = await pollHistoryStatus(controller.signal);
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      console.warn("penny history-status poll failed", err);
+      status = "fetching"; // try again next time, within the limit
+    }
+    if (controller.signal.aborted) return;
+    historyPollController = null;
+    console.log(`penny history poll ${historyRetries} of ${HISTORY_RETRY.maxRetries}: ${status ?? "no status endpoint"}`);
+    if (status === "fetching") {
+      scheduleHistoryPoll();
+    } else {
+      // Changed (or the backend has no status endpoint): ask for the new answer.
+      requestPrediction(PreferenceSliders.getValues(), { initial: false, retry: true });
+    }
   }, HISTORY_RETRY.delayMs);
 }
 
@@ -224,7 +283,7 @@ async function requestPrediction(sliderValues, { initial, retry = false }) {
   cancelHistoryRetry();
   const controller = (predictionController = new AbortController());
   const request = {
-    preferences: getPreferences(sliderValues),
+    preferences: getPreferences(sliderValues, currentSettings.minConfidencePct),
     price: currentProduct.price,
     currency: currentProduct.currency ?? "USD",
   };
@@ -239,14 +298,14 @@ async function requestPrediction(sliderValues, { initial, retry = false }) {
     console.log("penny prediction", request.preferences, prediction);
     renderRecommendation(prediction, request);
     WatchlistUI.setRecommendation(prediction.recommendation);
-    handleHistoryStatus(prediction.history_status);
+    handleHistoryStatus(prediction.history_status, prediction.data_source);
   } catch (err) {
     if (controller.signal.aborted || err?.kind === "cancelled") return;
     console.error("penny prediction failed", err, err?.detail ?? "");
     if (initial) renderPredictionError(err);
     else renderUpdateError(err);
     // Stop asking about history after an error; the card keeps the last result.
-    if (retry) renderHistoryNotice("gave_up");
+    if (retry) renderHistoryNotice("gave_up", lastDataSource);
   }
 }
 
