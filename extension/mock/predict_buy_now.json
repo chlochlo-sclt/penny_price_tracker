@@ -5,8 +5,10 @@
   "expected_drop_usd": 1.8,
   "interval_low_usd": 114.99,
   "interval_high_usd": 119.99,
+  "history_status": "ready",
+  "predicted_low_usd": 118.49,
   "confidence": "high",
-  "best_day": null,
+  "best_day": "2026-10-24",
   "explanation": "The current price is near its 90-day low, and big drops are unlikely in the next month.",
   "data_source": "real"
 }

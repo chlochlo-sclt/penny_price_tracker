@@ -81,7 +81,7 @@ async function setUpDevPanel() {
 // ---- Demo mode ------------------------------------------------------------
 // Hides the dev tools completely (for judging) and remembers that in
 // chrome.storage.local. Mock settings chosen before turning it on stay in
-// effect. To bring the dev tools back: Alt+Shift+D, or click the logo 5 times.
+// effect. To bring the dev tools back: Alt+Shift+D, or click the coin 5 times.
 
 const DEMO_MODE_KEY = "demoMode";
 const LOGO_CLICKS_TO_EXIT = 5;
@@ -103,7 +103,7 @@ async function setUpDemoMode() {
 
   let clicks = 0;
   let resetTimer = null;
-  $("panel-brand").addEventListener("click", () => {
+  $("coin").addEventListener("click", () => {
     clicks += 1;
     clearTimeout(resetTimer);
     resetTimer = setTimeout(() => { clicks = 0; }, 1500);
@@ -123,12 +123,23 @@ async function predictWithDevOverride(product, preferences, settings, signal) {
   if (settings.source !== "mock") return getPrediction(product, preferences, { signal });
   if (settings.prediction === "__loading") return new Promise(() => {});
   if (settings.prediction === "__error") throw new Error("Mock prediction failure");
+  // Like a real first visit: "fetching" at first, real history on the first retry.
+  if (settings.prediction === "__fetching_then_ready") {
+    return getMockPrediction(historyRetries === 0 ? "predict_fetching.json" : "predict_wait.json");
+  }
   return getMockPrediction(settings.prediction);
 }
 
 // ---- Main flow ------------------------------------------------------------
 
-/** Throws if the response doesn't have the fields the card needs. */
+// PredictResponse.history_status in app/schemas.py.
+const HISTORY_STATUSES = ["ready", "fetching", "failed", "unavailable"];
+
+/**
+ * Throws if the response doesn't have the fields the card needs. Returns it
+ * with history_status filled in: the backend's default is "ready", and older
+ * backends don't send the field at all.
+ */
 function checkPrediction(prediction) {
   if (!["buy_now", "wait"].includes(prediction?.recommendation)) {
     throw new Error(`Unexpected recommendation: ${prediction?.recommendation}`);
@@ -139,7 +150,20 @@ function checkPrediction(prediction) {
   if (!["real", "mixed", "simulated", "mock"].includes(prediction.data_source)) {
     throw new Error(`Unexpected data_source: ${prediction.data_source}`);
   }
-  return prediction;
+  const historyStatus = prediction.history_status ?? "ready";
+  if (!HISTORY_STATUSES.includes(historyStatus)) {
+    throw new Error(`Unexpected history_status: ${prediction.history_status}`);
+  }
+  // Optional in the schema: a non-negative number, or null.
+  const predictedLow = prediction.predicted_low_usd;
+  if (predictedLow != null && !(Number.isFinite(predictedLow) && predictedLow >= 0)) {
+    throw new Error(`Unexpected predicted_low_usd: ${predictedLow}`);
+  }
+  // The backend always sets best_day (today when buying now is best).
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(prediction.best_day ?? "")) {
+    throw new Error(`Unexpected best_day: ${prediction.best_day}`);
+  }
+  return { ...prediction, history_status: historyStatus };
 }
 
 // The product the card is about, the dev settings for this run, and the
@@ -148,14 +172,56 @@ let currentProduct = null;
 let currentSettings = DEFAULT_DEV_SETTINGS;
 let predictionController = null;
 
+// ---- Real price history ---------------------------------------------------
+// With no real history for a product yet, the backend answers right away
+// from labeled simulated history, with history_status "fetching", and fetches
+// real history in the background (app/live_fetch.py). That forecast is
+// usable, so the card shows it with a small "Loading real price history…"
+// notice, and asks again every 30 s until the status changes, at most 4 times.
+//
+// There's only ever one timer. Any new request (a slider move, a retry)
+// cancels it first, and its own answer schedules the next one if needed.
+// resetProduct() (new product, tab switch) cancels it and resets the count.
+
+const HISTORY_RETRY = { delayMs: 30_000, maxRetries: 4 };
+let historyRetryTimer = null;
+let historyRetries = 0; // retries used so far for currentProduct
+
+function cancelHistoryRetry() {
+  clearTimeout(historyRetryTimer);
+  historyRetryTimer = null;
+}
+
+/** After a prediction renders: update the notice, and retry if still fetching. */
+function handleHistoryStatus(status) {
+  cancelHistoryRetry();
+  if (status !== "fetching") {
+    renderHistoryNotice(status === "failed" ? "failed" : null);
+    return;
+  }
+  if (historyRetries >= HISTORY_RETRY.maxRetries) {
+    renderHistoryNotice("gave_up");
+    return;
+  }
+  renderHistoryNotice("fetching");
+  historyRetryTimer = setTimeout(() => {
+    historyRetryTimer = null;
+    historyRetries += 1;
+    console.log(`penny history still fetching: retry ${historyRetries} of ${HISTORY_RETRY.maxRetries}`);
+    requestPrediction(PreferenceSliders.getValues(), { initial: false, retry: true });
+  }, HISTORY_RETRY.delayMs);
+}
+
 /**
  * Requests a prediction for currentProduct with the given slider values.
- * Cancels any request still in flight, so only the latest result renders.
- * The first request of a run shows the full loading view; later ones (from
- * the sliders) keep the card visible and show a small "Updating…" state.
+ * Cancels any request still in flight (and any pending history retry), so
+ * only the latest result renders. The first request of a run shows the full
+ * loading view; slider changes keep the card visible with a small
+ * "Updating…" state; history retries update the card quietly.
  */
-async function requestPrediction(sliderValues, { initial }) {
+async function requestPrediction(sliderValues, { initial, retry = false }) {
   predictionController?.abort();
+  cancelHistoryRetry();
   const controller = (predictionController = new AbortController());
   const request = {
     preferences: getPreferences(sliderValues),
@@ -164,7 +230,7 @@ async function requestPrediction(sliderValues, { initial }) {
   };
 
   if (initial) renderLoading("Checking price history…");
-  else renderUpdating(true);
+  else if (!retry) renderUpdating(true);
 
   try {
     const raw = await predictWithDevOverride(currentProduct, request.preferences, currentSettings, controller.signal);
@@ -172,11 +238,15 @@ async function requestPrediction(sliderValues, { initial }) {
     const prediction = checkPrediction(raw);
     console.log("penny prediction", request.preferences, prediction);
     renderRecommendation(prediction, request);
+    WatchlistUI.setRecommendation(prediction.recommendation);
+    handleHistoryStatus(prediction.history_status);
   } catch (err) {
     if (controller.signal.aborted || err?.kind === "cancelled") return;
     console.error("penny prediction failed", err, err?.detail ?? "");
     if (initial) renderPredictionError(err);
     else renderUpdateError(err);
+    // Stop asking about history after an error; the card keeps the last result.
+    if (retry) renderHistoryNotice("gave_up");
   }
 }
 
@@ -194,7 +264,11 @@ const isSameProduct = (product, detection) =>
 /** Forget the current product and cancel its forecast. */
 function resetProduct() {
   predictionController?.abort();
+  cancelHistoryRetry();
+  historyRetries = 0;
+  renderHistoryNotice(null);
   currentProduct = null;
+  WatchlistUI.setRecommendation(null);
   $("watch-confirmation").hidden = true;
 }
 
@@ -295,12 +369,19 @@ async function start() {
     getGoal: () => PreferenceSliders.getValues(),
   });
   $("message-retry").addEventListener("click", () => run());
-  $("why-toggle").addEventListener("click", () => {
-    const toggle = $("why-toggle");
-    const open = toggle.getAttribute("aria-expanded") !== "true";
-    toggle.setAttribute("aria-expanded", String(open));
-    $("why-panel").hidden = !open;
+  // Closing the panel ends the page anyway; this just makes it explicit.
+  window.addEventListener("pagehide", () => {
+    cancelHistoryRetry();
+    predictionController?.abort();
   });
+  // "why?" and "details" expand in place.
+  for (const [toggleId, panelId] of [["why-toggle", "why-panel"], ["details-toggle", "details-content"]]) {
+    $(toggleId).addEventListener("click", () => {
+      const open = $(toggleId).getAttribute("aria-expanded") !== "true";
+      $(toggleId).setAttribute("aria-expanded", String(open));
+      $(panelId).hidden = !open;
+    });
+  }
   setUpDevPanel();
   await followActiveTab();
   run();

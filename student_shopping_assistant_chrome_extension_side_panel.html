@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>student shopping assistant - chrome extension side panel</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter for clean UI, Caveat for handwriting/crayon style text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Strict global lowercase rule */
+    * {
+      text-transform: lowercase !important;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      background-color: #090d16;
+      color: #f1f5f9;
+    }
+
+    .font-crayon {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    /* Floating Apple-Style Mesh Gradient Blob Animations */
+    @keyframes floatBlob1 {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.15); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+    }
+
+    @keyframes floatBlob2 {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(-35px, 30px) scale(1.1); }
+      66% { transform: translate(25px, -25px) scale(0.95); }
+    }
+
+    @keyframes floatBlob3 {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      50% { transform: translate(40px, 35px) scale(1.2); }
+    }
+
+    .animate-blob-1 { animation: floatBlob1 12s ease-in-out infinite; }
+    .animate-blob-2 { animation: floatBlob2 15s ease-in-out infinite; }
+    .animate-blob-3 { animation: floatBlob3 10s ease-in-out infinite; }
+
+    /* 3D Coin Pitch Toss Animation */
+    .coin-perspective {
+      perspective: 800px;
+    }
+
+    .coin-3d {
+      transform-style: preserve-3d;
+      /* Rest state: standing vertically on its thin rim edge */
+      transform: rotateY(80deg) rotateX(0deg);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .verdict-card:hover .coin-3d,
+    .coin-3d-toss {
+      animation: coinPitchToss 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    }
+
+    .verdict-card:hover .coin-shadow,
+    .coin-shadow-active {
+      animation: shadowPulse 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    }
+
+    @keyframes coinPitchToss {
+      0% {
+        transform: translateY(0px) rotateY(80deg) rotateX(0deg) scale(1);
+      }
+      50% {
+        /* Flips UP into the air along X-axis pitch, tumbles 720 deg */
+        transform: translateY(-68px) rotateY(0deg) rotateX(720deg) scale(1.25);
+      }
+      100% {
+        /* Lands back down cleanly on side edge profile */
+        transform: translateY(0px) rotateY(80deg) rotateX(1440deg) scale(1);
+      }
+    }
+
+    @keyframes shadowPulse {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(2.2); opacity: 0.08; }
+    }
+
+    /* Range Input Custom Styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+      width: 100%;
+    }
+
+    input[type=range]:focus {
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 22px;
+      width: 22px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+      margin-top: -8px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      transition: transform 0.15s ease;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      border-radius: 9999px;
+    }
+
+    /* Custom track backgrounds */
+    .track-date-light {
+      background: rgba(0, 0, 0, 0.12);
+    }
+    .track-date-dark {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Savings Slider Copper -> Silver -> Gold metallic track gradient */
+    .track-savings-copper {
+      background: linear-gradient(90deg, #b45309 0%, #d97706 100%);
+    }
+    .track-savings-silver {
+      background: linear-gradient(90deg, #b45309 0%, #cbd5e1 50%, #94a3b8 100%);
+    }
+    .track-savings-gold {
+      background: linear-gradient(90deg, #b45309 0%, #cbd5e1 40%, #f59e0b 100%);
+    }
+
+    /* Custom Scrollbar for side panel */
+    .side-panel-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .side-panel-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .side-panel-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 min-h-screen flex flex-col items-center justify-start lowercase">
+
+  <!-- Top Navigation & Control Bar -->
+  <header class="w-full max-w-6xl mb-6 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-purple-600 flex items-center justify-center font-bold text-slate-950 shadow-md">
+        sa
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-slate-100 tracking-tight">student shopping assistant</h1>
+        <p class="text-xs text-slate-400">chrome extension side panel UI/UX design (360×800px)</p>
+      </div>
+    </div>
+
+    <!-- Mode Switcher Buttons -->
+    <div class="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs font-medium">
+      <button id="btnViewSim" onclick="setViewMode('simulator')" class="px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-bold shadow transition-all">
+        interactive simulator
+      </button>
+      <button id="btnViewGrid" onclick="setViewMode('grid')" class="px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+        5-frame showcase grid
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= VIEW 1: INTERACTIVE SIMULATOR ================= -->
+  <main id="viewSimulator" class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+    <!-- Left Control Panel -->
+    <section class="lg:col-span-5 bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col gap-5">
+      <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+        <h2 class="text-xs font-bold text-slate-300">live simulator controls</h2>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">interactive</span>
+      </div>
+
+      <!-- Preset Season Buttons -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 mb-2">jump to seasonal theme</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="setSeasonPreset('october')" id="btn-p-october" class="p-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 font-medium text-left transition-all">
+            🎃 late october (halloween)
+          </button>
+          <button onclick="setSeasonPreset('november')" id="btn-p-november" class="p-2.5 rounded-xl border border-slate-800 bg-slate-800/50 text-slate-400 font-medium text-left transition-all">
+            🏷️ november (black friday)
+          </button>
+          <button onclick="setSeasonPreset('december')" id="btn-p-december" class="p-2.5 rounded-xl border border-slate-800 bg-slate-800/50 text-slate-400 font-medium text-left transition-all">
+            ❄️ december (winter dark)
+          </button>
+          <button onclick="setSeasonPreset('january')" id="btn-p-january" class="p-2.5 rounded-xl border border-slate-800 bg-slate-800/50 text-slate-400 font-medium text-left transition-all">
+            🎆 january (new year)
+          </button>
+        </div>
+      </div>
+
+      <!-- Verdict Switcher -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 mb-2">verdict state</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="setVerdictState('wait')" id="vrd-wait" class="py-2 px-3 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-medium">wait</button>
+          <button onclick="setVerdictState('buy now')" id="vrd-buy now" class="py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-medium">buy now</button>
+          <button onclick="setVerdictState('leaning wait')" id="vrd-leaning wait" class="py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-medium">leaning wait</button>
+          <button onclick="setVerdictState('leaning buy now')" id="vrd-leaning buy now" class="py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-medium">leaning buy now</button>
+        </div>
+      </div>
+
+      <!-- Manual Toss Button & Motion Toggle -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+        <button onclick="triggerCoinToss()" class="px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-all font-semibold">
+          🪙 trigger 3d pitch toss
+        </button>
+        <label class="flex items-center gap-2 text-slate-400 cursor-pointer">
+          <input type="checkbox" id="chkBlobMotion" checked onchange="toggleBlobMotion(this.checked)" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+          <span>bg blob motion</span>
+        </label>
+      </div>
+
+      <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
+        <p class="text-amber-400 font-semibold">💡 ux behavior notes:</p>
+        <p>• dragging deadline slider dynamically transitions seasonal color palettes and dark mode.</p>
+        <p>• winter (december) triggers high-contrast mode with crisp white text.</p>
+        <p>• dynamic holiday badges appear above thumb while dragging to avoid text collisions.</p>
+        <p>• single <span class="text-slate-200 font-medium">"wait & watch"</span> button with no bell icon.</p>
+      </div>
+    </section>
+
+    <!-- Side Panel Viewport Outer Frame (360px x 800px) -->
+    <section class="lg:col-span-7 flex justify-center">
+      <div class="relative w-[360px] h-[800px] rounded-[36px] border-[7px] border-slate-800 bg-slate-950 shadow-2xl overflow-hidden flex flex-col select-none">
+        
+        <!-- Chrome Extension Side Panel Header Bar -->
+        <div class="h-11 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/60 px-4 flex items-center justify-between shrink-0 z-30">
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-[9px] font-bold">sa</div>
+            <span class="text-[11px] font-semibold text-slate-300">shopping assistant</span>
+          </div>
+          <span class="text-[10px] text-slate-500">360 × 800</span>
+        </div>
+
+        <!-- Dynamic Side Panel Container with Animated Seasonal Gradient & Blobs -->
+        <div id="simPanelContainer" class="relative flex-1 overflow-hidden transition-colors duration-700">
+          
+          <!-- Animated Soft Blurred Gradient Blobs -->
+          <div id="blobWrapper" class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div id="blob1" class="animate-blob-1 absolute -top-10 -left-10 w-64 h-64 rounded-full filter blur-3xl opacity-60 transition-colors duration-700"></div>
+            <div id="blob2" class="animate-blob-2 absolute top-1/3 -right-16 w-72 h-72 rounded-full filter blur-3xl opacity-60 transition-colors duration-700"></div>
+            <div id="blob3" class="animate-blob-3 absolute -bottom-10 left-10 w-60 h-60 rounded-full filter blur-3xl opacity-50 transition-colors duration-700"></div>
+          </div>
+
+          <!-- Main Scrollable Content Area -->
+          <div id="simPanelContent" class="side-panel-scroll relative z-10 h-full overflow-y-auto p-4 flex flex-col justify-between transition-colors duration-500">
+            
+            <div class="space-y-4">
+              <!-- 1. Product Line (small, no logo at top) -->
+              <p id="simProductLine" class="text-xs font-normal text-center tracking-tight opacity-75">
+                apple macbook air 13" m5 · $1,149
+              </p>
+
+              <!-- 2. Verdict Section (Caveat font, huge) + 3D Flipping Coin -->
+              <div id="simVerdictCard" class="verdict-card relative bg-white/40 backdrop-blur-md rounded-2xl p-4 flex items-center justify-between border border-white/50 shadow-sm transition-all duration-300 cursor-pointer">
+                <div>
+                  <div id="simVerdictText" class="font-crayon text-5xl font-bold tracking-wide">
+                    wait
+                  </div>
+                </div>
+
+                <!-- 3D Coin Sitting Edge-On at Rest -->
+                <div class="coin-perspective p-2 relative flex items-center justify-center" title="hover to flip coin">
+                  <!-- Drop Shadow -->
+                  <div class="coin-shadow absolute bottom-1 w-8 h-2 rounded-full bg-slate-950/20 filter blur-sm"></div>
+                  <!-- 3D Coin Element -->
+                  <div id="simCoin" class="coin-3d w-10 h-10 rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 border-2 border-amber-200 shadow-md flex items-center justify-center text-slate-950 font-black text-[10px] tracking-tighter">
+                    sa
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Chance Line -->
+              <p id="simChanceText" class="text-xs font-normal px-1 leading-relaxed opacity-90">
+                62% chance you'll save $115+ (10%) by nov 27.
+              </p>
+
+              <!-- Frosted Glass Card for Sliders -->
+              <div id="simSlidersCard" class="bg-white/45 backdrop-blur-md border border-white/60 rounded-3xl p-4 space-y-5 shadow-sm transition-all duration-500">
+                
+                <!-- FIRST SLIDER: "when do you need it by?" -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between items-baseline">
+                    <span id="simLabelNeedBy" class="font-crayon text-2xl font-bold">when do you need it by?</span>
+                  </div>
+
+                  <!-- Dynamic Thumb Tag with Occasion Badge -->
+                  <div class="flex justify-center">
+                    <span id="simDateTag" class="text-[11px] font-semibold px-3 py-1 rounded-full bg-white/80 shadow-sm border border-slate-200/60 text-slate-800 transition-all">
+                      by nov 27 · black friday
+                    </span>
+                  </div>
+
+                  <input type="range" id="simTimeSlider" min="1" max="90" value="35" oninput="onSimTimeInput(this.value)">
+
+                  <!-- Reference Ticks -->
+                  <div id="simTimeTicks" class="flex justify-between text-[10px] opacity-70 px-1 font-medium">
+                    <span>1 week</span>
+                    <span>2 weeks</span>
+                    <span>1 month</span>
+                    <span>2 months</span>
+                    <span>3 months</span>
+                  </div>
+                </div>
+
+                <!-- SECOND SLIDER: "how much do you want to save?" -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between items-baseline">
+                    <span id="simLabelSave" class="font-crayon text-2xl font-bold">how much do you want to save?</span>
+                  </div>
+
+                  <!-- Thumb Tag -->
+                  <div class="flex justify-center">
+                    <span id="simSavingsTag" class="text-[11px] font-semibold px-3 py-1 rounded-full bg-white/80 shadow-sm border border-slate-200/60 text-slate-800">
+                      $115 · 10%
+                    </span>
+                  </div>
+
+                  <input type="range" id="simSavingsSlider" min="0" max="30" value="10" oninput="onSimSavingsInput(this.value)" class="track-savings-copper">
+
+                  <!-- Reference Ticks -->
+                  <div id="simSavingsTicks" class="flex justify-between text-[10px] opacity-70 px-1 font-medium">
+                    <span>0%</span>
+                    <span>30%</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- 4. Action Buttons Side-by-Side OR Single Button -->
+              <div class="pt-1">
+                <button id="simPrimaryBtn" onclick="toggleSimWatchlist()" class="w-full py-3.5 px-4 rounded-2xl font-bold bg-[#3d2b1f] hover:bg-[#2c1e15] text-white transition-all shadow-md active:scale-[0.98] text-xs tracking-wide">
+                  wait & watch
+                </button>
+              </div>
+
+              <!-- 5. Quiet Chips Row -->
+              <div class="flex items-center justify-between text-[10px] px-1 pt-0.5">
+                <div class="flex items-center gap-1.5">
+                  <span id="simChipConf" class="px-2.5 py-1 rounded-full bg-white/50 border border-slate-300/50 opacity-80">
+                    medium confidence
+                  </span>
+                  <span id="simChipData" class="px-2.5 py-1 rounded-full bg-white/50 border border-slate-300/50 opacity-80">
+                    partly simulated data
+                  </span>
+                </div>
+                <button onclick="toggleWhyModal()" id="simLinkWhy" class="underline font-semibold opacity-70 hover:opacity-100">
+                  why?
+                </button>
+              </div>
+
+              <!-- 6. Collapsible Details Accordion -->
+              <div id="simDetailsCard" class="bg-white/40 backdrop-blur-md border border-white/50 rounded-2xl p-3.5 shadow-sm transition-all duration-300">
+                <button onclick="toggleSimDetails()" class="w-full flex items-center justify-between text-xs font-semibold">
+                  <span>details</span>
+                  <span id="simDetailsArrow" class="text-xs transition-transform duration-200">▼</span>
+                </button>
+
+                <div id="simDetailsContent" class="hidden mt-3 space-y-3 pt-2 border-t border-slate-400/20 text-xs">
+                  <!-- Price Range Bar -->
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] opacity-80">
+                      <span>likely price range</span>
+                      <span class="font-semibold">today $1,149</span>
+                    </div>
+                    <div class="relative w-full h-2 rounded-full bg-slate-300/60 overflow-hidden">
+                      <div class="absolute left-0 top-0 bottom-0 w-3/4 bg-amber-600/70 rounded-full"></div>
+                      <div class="absolute right-1 top-0 bottom-0 w-1.5 bg-slate-900 rounded-full"></div>
+                    </div>
+                    <div class="flex justify-between text-[9px] opacity-60">
+                      <span>$925</span>
+                      <span>$1,149</span>
+                    </div>
+                  </div>
+
+                  <!-- Watch List Item -->
+                  <div class="pt-1 flex justify-between items-center text-[11px]">
+                    <div>
+                      <p class="font-medium">watch list · macbook air 13" m5</p>
+                      <p class="text-[9px] opacity-70">notify at $1,034 or less</p>
+                    </div>
+                    <span id="simWatchStatus" class="text-[10px] font-semibold opacity-80">watching</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= VIEW 2: 5-FRAME SHOWCASE GRID ================= -->
+  <main id="viewGrid" class="hidden w-full max-w-7xl">
+    <div class="mb-4 text-center md:text-left">
+      <h2 class="text-sm font-bold text-slate-200">5-frame side panel showcase grid (360 × 800 px)</h2>
+      <p class="text-xs text-slate-400">all requested frame states generated with accurate seasonal mesh gradients, contrast modes, and lowercase typography.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 justify-items-center">
+      
+      <!-- FRAME 1: WAIT - NOV 27 (NOVEMBER GRADIENT) -->
+      <div class="w-[300px] h-[660px] rounded-[28px] border-4 border-slate-800 bg-amber-100/90 shadow-xl overflow-hidden flex flex-col relative scale-95 hover:scale-100 transition-transform duration-300">
+        <div class="h-8 bg-slate-900 px-3 flex items-center justify-between text-[10px] text-slate-300 font-medium">
+          <span>frame 1: wait</span>
+          <span class="text-amber-400">nov 27 · november</span>
+        </div>
+        <!-- November Warm Amber Gradient -->
+        <div class="flex-1 p-3.5 flex flex-col justify-between text-slate-800 text-xs bg-gradient-to-b from-amber-200 via-amber-100 to-amber-200/80 relative overflow-hidden">
+          <div class="space-y-3 relative z-10">
+            <p class="text-[11px] opacity-75 text-center">apple macbook air 13" m5 · $1,149</p>
+            
+            <div class="bg-white/40 backdrop-blur-md rounded-2xl p-3 flex justify-between items-center border border-white/60">
+              <span class="font-crayon text-4xl font-bold text-slate-900">wait</span>
+              <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-600 to-yellow-200 text-slate-950 text-[8px] font-black flex items-center justify-center">sa</div>
+            </div>
+
+            <p class="text-[10px] leading-relaxed">62% chance you'll save $115+ (10%) by nov 27.</p>
+
+            <div class="bg-white/50 backdrop-blur-md rounded-2xl p-3 space-y-3 border border-white/60">
+              <div>
+                <p class="font-crayon text-lg font-bold">when do you need it by?</p>
+                <div class="text-center my-1"><span class="bg-white px-2 py-0.5 rounded-full text-[9px] font-semibold border">by nov 27</span></div>
+                <div class="h-1 bg-slate-300 rounded-full"><div class="w-2/5 h-full bg-amber-600 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] opacity-60 mt-1"><span>1w</span><span>1m</span><span>2m</span><span>3m</span></div>
+              </div>
+
+              <div>
+                <p class="font-crayon text-lg font-bold">how much do you want to save?</p>
+                <div class="text-center my-1"><span class="bg-white px-2 py-0.5 rounded-full text-[9px] font-semibold border">$115 · 10%</span></div>
+                <div class="h-1 bg-slate-300 rounded-full"><div class="w-1/3 h-full bg-amber-600 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] opacity-60 mt-1"><span>0%</span><span>30%</span></div>
+              </div>
+            </div>
+
+            <button class="w-full py-2.5 rounded-xl bg-[#4a3525] text-white font-bold text-xs">wait & watch</button>
+
+            <div class="flex justify-between text-[8px] opacity-70">
+              <span class="bg-white/40 px-2 py-0.5 rounded-full">medium confidence</span>
+              <span class="bg-white/40 px-2 py-0.5 rounded-full">partly simulated</span>
+              <span class="underline">why?</span>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-400/20 pt-2 flex justify-between text-[10px] font-semibold">
+            <span>details</span>
+            <span>▼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FRAME 2: BUY NOW - DEC 20 (DECEMBER DARK NAVY GRADIENT + WHITE TEXT) -->
+      <div class="w-[300px] h-[660px] rounded-[28px] border-4 border-slate-800 bg-slate-950 shadow-xl overflow-hidden flex flex-col relative scale-95 hover:scale-100 transition-transform duration-300">
+        <div class="h-8 bg-slate-900 px-3 flex items-center justify-between text-[10px] text-slate-300 font-medium border-b border-slate-800">
+          <span>frame 2: buy now</span>
+          <span class="text-sky-300">dec 20 · december dark</span>
+        </div>
+        <!-- December Dark Navy Gradient + High Contrast White Text -->
+        <div class="flex-1 p-3.5 flex flex-col justify-between text-white text-xs bg-gradient-to-b from-[#0b1329] via-[#0f172a] to-[#0284c7]/20 relative overflow-hidden">
+          <div class="space-y-3 relative z-10">
+            <p class="text-[11px] opacity-80 text-center">apple macbook air 13" m5 · $1,149</p>
+            
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3 flex justify-between items-center border border-white/20">
+              <span class="font-crayon text-4xl font-bold text-white">buy now</span>
+              <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-200 text-slate-950 text-[8px] font-black flex items-center justify-center">sa</div>
+            </div>
+
+            <p class="text-[10px] leading-relaxed text-slate-200">24% chance you'll save $115+ (10%) by dec 20.</p>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3 space-y-3 border border-white/20">
+              <div>
+                <p class="font-crayon text-lg font-bold text-white">when do you need it by?</p>
+                <div class="text-center my-1"><span class="bg-white/20 text-white px-2 py-0.5 rounded-full text-[9px] font-semibold border border-white/30">by dec 20</span></div>
+                <div class="h-1 bg-slate-700 rounded-full"><div class="w-3/5 h-full bg-sky-400 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] text-slate-300 mt-1"><span>1w</span><span>1m</span><span>2m</span><span>3m</span></div>
+              </div>
+
+              <div>
+                <p class="font-crayon text-lg font-bold text-white">how much do you want to save?</p>
+                <div class="text-center my-1"><span class="bg-white/20 text-white px-2 py-0.5 rounded-full text-[9px] font-semibold border border-white/30">$115 · 10%</span></div>
+                <div class="h-1 bg-slate-700 rounded-full"><div class="w-1/3 h-full bg-sky-400 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] text-slate-300 mt-1"><span>0%</span><span>30%</span></div>
+              </div>
+            </div>
+
+            <button class="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">buy now at $1,149</button>
+
+            <div class="flex justify-between text-[8px] text-slate-300">
+              <span class="bg-white/10 px-2 py-0.5 rounded-full border border-white/10">medium confidence</span>
+              <span class="bg-white/10 px-2 py-0.5 rounded-full border border-white/10">partly simulated</span>
+              <span class="underline">why?</span>
+            </div>
+          </div>
+
+          <div class="border-t border-white/20 pt-2 flex justify-between text-[10px] font-semibold text-white">
+            <span>details</span>
+            <span>▼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FRAME 3: LEANING WAIT - NOV 2 (HALLOWEEN GRADIENT) -->
+      <div class="w-[300px] h-[660px] rounded-[28px] border-4 border-slate-800 bg-orange-100 shadow-xl overflow-hidden flex flex-col relative scale-95 hover:scale-100 transition-transform duration-300">
+        <div class="h-8 bg-slate-900 px-3 flex items-center justify-between text-[10px] text-slate-300 font-medium">
+          <span>frame 3: leaning wait</span>
+          <span class="text-orange-400">nov 2 · halloween</span>
+        </div>
+        <!-- October Halloween Orange/Purple Gradient -->
+        <div class="flex-1 p-3.5 flex flex-col justify-between text-slate-800 text-xs bg-gradient-to-b from-orange-200 via-amber-100 to-purple-200/70 relative overflow-hidden">
+          <div class="space-y-3 relative z-10">
+            <p class="text-[11px] opacity-75 text-center">apple macbook air 13" m5 · $1,149</p>
+            
+            <div class="bg-white/40 backdrop-blur-md rounded-2xl p-3 flex justify-between items-center border border-white/60">
+              <span class="font-crayon text-4xl font-bold text-slate-500">leaning wait</span>
+              <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-600 to-yellow-200 text-slate-950 text-[8px] font-black flex items-center justify-center">sa</div>
+            </div>
+
+            <p class="text-[10px] leading-relaxed">53% chance you'll save $115+ (10%) by nov 2.</p>
+
+            <div class="bg-white/50 backdrop-blur-md rounded-2xl p-3 space-y-3 border border-white/60">
+              <div>
+                <p class="font-crayon text-lg font-bold">when do you need it by?</p>
+                <div class="text-center my-1"><span class="bg-white px-2 py-0.5 rounded-full text-[9px] font-semibold border">by nov 2 · halloween</span></div>
+                <div class="h-1 bg-slate-300 rounded-full"><div class="w-1/6 h-full bg-orange-500 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] opacity-60 mt-1"><span>1w</span><span>1m</span><span>2m</span><span>3m</span></div>
+              </div>
+
+              <div>
+                <p class="font-crayon text-lg font-bold">how much do you want to save?</p>
+                <div class="text-center my-1"><span class="bg-white px-2 py-0.5 rounded-full text-[9px] font-semibold border">$115 · 10%</span></div>
+                <div class="h-1 bg-slate-300 rounded-full"><div class="w-1/3 h-full bg-orange-500 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] opacity-60 mt-1"><span>0%</span><span>30%</span></div>
+              </div>
+            </div>
+
+            <button class="w-full py-2.5 rounded-xl bg-[#4a3525] text-white font-bold text-xs">wait & watch</button>
+
+            <div class="flex justify-between text-[8px] opacity-70">
+              <span class="bg-white/40 px-2 py-0.5 rounded-full">low confidence</span>
+              <span class="bg-white/40 px-2 py-0.5 rounded-full">partly simulated</span>
+              <span class="underline">why?</span>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-400/20 pt-2 flex justify-between text-[10px] font-semibold">
+            <span>details</span>
+            <span>▼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FRAME 4: WAIT - JAN 1 (NEW YEAR CRIMSON GRADIENT) -->
+      <div class="w-[300px] h-[660px] rounded-[28px] border-4 border-slate-800 bg-rose-100 shadow-xl overflow-hidden flex flex-col relative scale-95 hover:scale-100 transition-transform duration-300">
+        <div class="h-8 bg-slate-900 px-3 flex items-center justify-between text-[10px] text-slate-300 font-medium">
+          <span>frame 4: wait</span>
+          <span class="text-rose-400">jan 1 · new year</span>
+        </div>
+        <!-- January New Year Burgundy/Crimson Gradient -->
+        <div class="flex-1 p-3.5 flex flex-col justify-between text-slate-800 text-xs bg-gradient-to-b from-rose-200 via-rose-100 to-amber-100/80 relative overflow-hidden">
+          <div class="space-y-3 relative z-10">
+            <p class="text-[11px] opacity-75 text-center">apple macbook air 13" m5 · $1,149</p>
+            
+            <div class="bg-white/40 backdrop-blur-md rounded-2xl p-3 flex justify-between items-center border border-white/60">
+              <span class="font-crayon text-4xl font-bold text-slate-900">wait</span>
+              <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-600 to-yellow-200 text-slate-950 text-[8px] font-black flex items-center justify-center">sa</div>
+            </div>
+
+            <p class="text-[10px] leading-relaxed">76% chance you'll save $115+ (10%) by jan 1.</p>
+
+            <div class="bg-white/50 backdrop-blur-md rounded-2xl p-3 space-y-3 border border-white/60">
+              <div>
+                <p class="font-crayon text-lg font-bold">when do you need it by?</p>
+                <div class="text-center my-1"><span class="bg-white px-2 py-0.5 rounded-full text-[9px] font-semibold border">by jan 1 · new year's day</span></div>
+                <div class="h-1 bg-slate-300 rounded-full"><div class="w-4/5 h-full bg-rose-600 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] opacity-60 mt-1"><span>1w</span><span>1m</span><span>2m</span><span>3m</span></div>
+              </div>
+
+              <div>
+                <p class="font-crayon text-lg font-bold">how much do you want to save?</p>
+                <div class="text-center my-1"><span class="bg-white px-2 py-0.5 rounded-full text-[9px] font-semibold border">$115 · 10%</span></div>
+                <div class="h-1 bg-slate-300 rounded-full"><div class="w-1/3 h-full bg-rose-600 rounded-full"></div></div>
+                <div class="flex justify-between text-[8px] opacity-60 mt-1"><span>0%</span><span>30%</span></div>
+              </div>
+            </div>
+
+            <button class="w-full py-2.5 rounded-xl bg-[#4a3525] text-white font-bold text-xs">wait & watch</button>
+
+            <div class="flex justify-between text-[8px] opacity-70">
+              <span class="bg-white/40 px-2 py-0.5 rounded-full">medium confidence</span>
+              <span class="bg-white/40 px-2 py-0.5 rounded-full border border-rose-400">partly simulated</span>
+              <span class="underline">why?</span>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-400/20 pt-2 flex justify-between text-[10px] font-semibold">
+            <span>details</span>
+            <span>▼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FRAME 5: DETAILS EXPANDED - NOV 27 -->
+      <div class="w-[300px] h-[660px] rounded-[28px] border-4 border-slate-800 bg-amber-100 shadow-xl overflow-hidden flex flex-col relative scale-95 hover:scale-100 transition-transform duration-300">
+        <div class="h-8 bg-slate-900 px-3 flex items-center justify-between text-[10px] text-slate-300 font-medium">
+          <span>frame 5: details open</span>
+          <span class="text-amber-400">nov 27 · details</span>
+        </div>
+        <!-- November Gradient with Details Accordion Expanded -->
+        <div class="flex-1 p-3.5 flex flex-col justify-between text-slate-800 text-xs bg-gradient-to-b from-amber-200 via-amber-100 to-amber-200/80 relative overflow-hidden">
+          <div class="space-y-2.5 relative z-10">
+            <p class="text-[11px] opacity-75 text-center">apple macbook air 13" m5 · $1,149</p>
+
+            <div class="bg-white/40 backdrop-blur-md rounded-2xl p-2.5 flex justify-between items-center border border-white/60">
+              <span class="font-crayon text-3xl font-bold text-slate-900">wait</span>
+              <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-600 to-yellow-200 text-slate-950 text-[8px] font-black flex items-center justify-center">sa</div>
+            </div>
+
+            <p class="text-[9px] leading-tight opacity-90">62% chance you'll save $115+ (10%) by nov 27.</p>
+
+            <button class="w-full py-2 rounded-xl bg-[#4a3525] text-white font-bold text-xs">wait & watch</button>
+
+            <!-- Expanded Details Section -->
+            <div class="bg-white/60 backdrop-blur-md rounded-2xl p-3 border border-white/80 space-y-2.5 shadow-sm">
+              <div class="flex justify-between items-center text-[10px] font-bold">
+                <span>details</span>
+                <span>▲</span>
+              </div>
+              <div class="space-y-1">
+                <div class="flex justify-between text-[9px] opacity-80">
+                  <span>likely price range</span>
+                  <span class="font-semibold">today $1,149</span>
+                </div>
+                <div class="relative w-full h-1.5 rounded-full bg-slate-300 overflow-hidden">
+                  <div class="absolute left-0 top-0 bottom-0 w-3/4 bg-amber-600 rounded-full"></div>
+                  <div class="absolute right-0 top-0 bottom-0 w-1 bg-slate-900 rounded-full"></div>
+                </div>
+                <div class="flex justify-between text-[8px] opacity-60">
+                  <span>$925</span>
+                  <span>$1,149</span>
+                </div>
+              </div>
+
+              <div class="pt-1 text-[9px] space-y-0.5 border-t border-slate-300/50">
+                <p class="font-semibold">watch list · macbook air 13" m5</p>
+                <div class="flex justify-between text-slate-600">
+                  <span>notify at $1,034 or less</span>
+                  <span class="font-bold text-amber-800">watching</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[8px] opacity-60 text-center">
+            auto-synced with student deals
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Explanation Modal ("why?") -->
+  <div id="whyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-slate-200">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="text-xs font-bold text-amber-400">why this verdict & confidence rating?</h3>
+        <button onclick="toggleWhyModal()" class="text-slate-400 hover:text-slate-200 text-xs">✕</button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        our AI model evaluates 24 months of historical price cycles, student discount overlaps, and inventory replenishment dates for apple and top tech brands.
+      </p>
+      <ul class="text-[11px] text-slate-400 space-y-1 list-disc pl-4">
+        <li>black friday discounts historically hit 10%–15% for new macbooks.</li>
+        <li>back-to-school gift card promotions end before november.</li>
+        <li>partly simulated based on projected merchant stock levels.</li>
+      </ul>
+      <button onclick="toggleWhyModal()" class="w-full py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl transition-all">
+        got it
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Simulator Logic Script -->
+  <script>
+    // Global State
+    let simVerdict = 'wait';
+    let isDetailsOpen = false;
+    let isWatchlisted = false;
+
+    // Seasonal Color Schemes for Background & Mesh Blobs
+    const seasonalThemes = {
+      october: {
+        bgClass: 'bg-amber-100/90',
+        b1: '#fb923c', // soft orange
+        b2: '#f59e0b', // gold
+        b3: '#7e22ce', // purple
+        isDark: false
+      },
+      november: {
+        bgClass: 'bg-amber-100',
+        b1: '#d97706', // warm amber
+        b2: '#b45309', // copper
+        b3: '#fef3c7', // warm cream
+        isDark: false
+      },
+      december: {
+        bgClass: 'bg-[#0b1329]',
+        b1: '#1d4ed8', // royal blue
+        b2: '#0369a1', // slate blue
+        b3: '#4f46e5', // indigo
+        isDark: true
+      },
+      january: {
+        bgClass: 'bg-rose-100/90',
+        b1: '#9f1239', // crimson
+        b2: '#881337', // burgundy
+        b3: '#f43f5e', // rose
+        isDark: false
+      }
+    };
+
+    // Mode Switcher (Simulator vs 5-Frame Showcase Grid)
+    function setViewMode(mode) {
+      const simView = document.getElementById('viewSimulator');
+      const gridView = document.getElementById('viewGrid');
+      const btnSim = document.getElementById('btnViewSim');
+      const btnGrid = document.getElementById('btnViewGrid');
+
+      if (mode === 'simulator') {
+        simView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+        btnSim.className = 'px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-bold shadow transition-all';
+        btnGrid.className = 'px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all';
+      } else {
+        simView.classList.add('hidden');
+        gridView.classList.remove('hidden');
+        btnGrid.className = 'px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-bold shadow transition-all';
+        btnSim.className = 'px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all';
+      }
+    }
+
+    // Time Slider Logic with Smooth Seasonal Color Transitions
+    function onSimTimeInput(val) {
+      const days = parseInt(val);
+      let seasonKey = 'november';
+      let dateText = 'by nov 27';
+      let occasionText = '';
+
+      // Determine Date & Seasonal Theme based on slider position
+      if (days <= 10) {
+        seasonKey = 'october';
+        dateText = `by nov ${days + 1}`;
+        if (days >= 4 && days <= 9) occasionText = ' · halloween';
+      } else if (days <= 40) {
+        seasonKey = 'november';
+        const dNum = days - 10;
+        dateText = `by nov ${dNum < 30 ? dNum : 30}`;
+        if (days >= 28 && days <= 38) occasionText = ' · black friday';
+      } else if (days <= 70) {
+        seasonKey = 'december';
+        const dNum = days - 40;
+        dateText = `by dec ${dNum < 31 ? dNum : 31}`;
+        if (days >= 58 && days <= 68) occasionText = ' · christmas';
+      } else {
+        seasonKey = 'january';
+        const dNum = days - 70;
+        dateText = `by jan ${dNum < 31 ? dNum : 31}`;
+        if (days >= 71 && days <= 80) occasionText = " · new year's day";
+      }
+
+      // Update Date Tag Display
+      document.getElementById('simDateTag').textContent = `${dateText}${occasionText}`;
+
+      // Update Seasonal Theme
+      applySeasonalTheme(seasonKey);
+      updateChanceCallout();
+    }
+
+    // Apply Seasonal Color Theme & Toggle Winter Dark Contrast
+    function applySeasonalTheme(key) {
+      const theme = seasonalThemes[key];
+      const container = document.getElementById('simPanelContainer');
+      const b1 = document.getElementById('blob1');
+      const b2 = document.getElementById('blob2');
+      const b3 = document.getElementById('blob3');
+
+      // Update background and blob colors
+      container.style.backgroundColor = theme.isDark ? '#0b1329' : (key === 'october' ? '#fff7ed' : key === 'november' ? '#fffbeb' : '#fff1f2');
+      b1.style.backgroundColor = theme.b1;
+      b2.style.backgroundColor = theme.b2;
+      b3.style.backgroundColor = theme.b3;
+
+      // Update Active Control Deck Buttons
+      ['october', 'november', 'december', 'january'].forEach(k => {
+        const btn = document.getElementById(`btn-p-${k}`);
+        if (k === key) {
+          btn.className = 'p-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 font-medium text-left transition-all';
+        } else {
+          btn.className = 'p-2.5 rounded-xl border border-slate-800 bg-slate-800/50 text-slate-400 font-medium text-left transition-all';
+        }
+      });
+
+      // DECEMBER DARK MODE TEXT CONTRAST OVERRIDE
+      const content = document.getElementById('simPanelContent');
+      const verdictCard = document.getElementById('simVerdictCard');
+      const slidersCard = document.getElementById('simSlidersCard');
+      const detailsCard = document.getElementById('simDetailsCard');
+      const timeSlider = document.getElementById('simTimeSlider');
+
+      if (theme.isDark) {
+        content.className = 'side-panel-scroll relative z-10 h-full overflow-y-auto p-4 flex flex-col justify-between transition-colors duration-500 text-white';
+        verdictCard.className = 'verdict-card relative bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center justify-between border border-white/20 shadow-sm transition-all duration-300 cursor-pointer';
+        slidersCard.className = 'bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-4 space-y-5 shadow-sm transition-all duration-500';
+        detailsCard.className = 'bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 shadow-sm transition-all duration-300';
+        timeSlider.className = 'track-date-dark';
+      } else {
+        content.className = 'side-panel-scroll relative z-10 h-full overflow-y-auto p-4 flex flex-col justify-between transition-colors duration-500 text-slate-800';
+        verdictCard.className = 'verdict-card relative bg-white/40 backdrop-blur-md rounded-2xl p-4 flex items-center justify-between border border-white/50 shadow-sm transition-all duration-300 cursor-pointer';
+        slidersCard.className = 'bg-white/45 backdrop-blur-md border border-white/60 rounded-3xl p-4 space-y-5 shadow-sm transition-all duration-500';
+        detailsCard.className = 'bg-white/40 backdrop-blur-md border border-white/50 rounded-2xl p-3.5 shadow-sm transition-all duration-300';
+        timeSlider.className = 'track-date-light';
+      }
+    }
+
+    // Savings Slider Input
+    function onSimSavingsInput(val) {
+      const pct = parseInt(val);
+      const savingsAmt = Math.round((1149 * pct) / 100);
+      const tag = document.getElementById('simSavingsTag');
+      const slider = document.getElementById('simSavingsSlider');
+
+      tag.textContent = `$${savingsAmt} · ${pct}%`;
+
+      // Track gradient accent shift: copper (low) -> silver -> gold (high)
+      if (pct < 10) {
+        slider.className = 'track-savings-copper';
+      } else if (pct < 22) {
+        slider.className = 'track-savings-silver';
+      } else {
+        slider.className = 'track-savings-gold';
+      }
+
+      updateChanceCallout();
+    }
+
+    // Dynamic Chance Line Calculation
+    function updateChanceCallout() {
+      const days = parseInt(document.getElementById('simTimeSlider').value);
+      const pct = parseInt(document.getElementById('simSavingsSlider').value);
+      const savingsAmt = Math.round((1149 * pct) / 100);
+      const dateText = document.getElementById('simDateTag').textContent.split('·')[0].trim();
+
+      let chance = 62;
+      if (days >= 28 && days <= 38) chance += 16;
+      if (pct > 18) chance -= 20;
+      if (chance > 95) chance = 95;
+      if (chance < 12) chance = 12;
+
+      document.getElementById('simChanceText').textContent = `${chance}% chance you'll save $${savingsAmt}+ (${pct}%) ${dateText}.`;
+    }
+
+    // Preset Buttons
+    function setSeasonPreset(season) {
+      if (season === 'october') document.getElementById('simTimeSlider').value = 7;
+      else if (season === 'november') document.getElementById('simTimeSlider').value = 35;
+      else if (season === 'december') document.getElementById('simTimeSlider').value = 60;
+      else if (season === 'january') document.getElementById('simTimeSlider').value = 75;
+
+      onSimTimeInput(document.getElementById('simTimeSlider').value);
+    }
+
+    // Verdict Switching
+    function setVerdictState(verdict) {
+      simVerdict = verdict;
+      const vText = document.getElementById('simVerdictText');
+      const btn = document.getElementById('simPrimaryBtn');
+
+      vText.textContent = verdict;
+
+      ['wait', 'buy now', 'leaning wait', 'leaning buy now'].forEach(v => {
+        const b = document.getElementById(`vrd-${v}`);
+        if (v === verdict) {
+          b.className = 'py-2 px-3 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-medium';
+        } else {
+          b.className = 'py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-medium';
+        }
+      });
+
+      if (verdict.includes('buy now')) {
+        vText.style.color = '#10b981'; // emerald
+        btn.textContent = 'buy now at $1,149';
+        btn.className = 'w-full py-3.5 px-4 rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all shadow-md text-xs tracking-wide';
+      } else {
+        vText.style.color = verdict.includes('leaning') ? '#94a3b8' : ''; // grey for leaning
+        btn.textContent = isWatchlisted ? 'tracking on watchlist' : 'wait & watch';
+        btn.className = 'w-full py-3.5 px-4 rounded-2xl font-bold bg-[#3d2b1f] hover:bg-[#2c1e15] text-white transition-all shadow-md active:scale-[0.98] text-xs tracking-wide';
+      }
+    }
+
+    // Trigger 3D Coin Toss Animation
+    function triggerCoinToss() {
+      const coin = document.getElementById('simCoin');
+      coin.classList.remove('coin-3d-toss');
+      void coin.offsetWidth; // trigger reflow
+      coin.classList.add('coin-3d-toss');
+    }
+
+    // Toggle Background Blob Motion
+    function toggleBlobMotion(enabled) {
+      const wrapper = document.getElementById('blobWrapper');
+      wrapper.style.display = enabled ? 'block' : 'none';
+    }
+
+    // Toggle Watchlist State
+    function toggleSimWatchlist() {
+      if (simVerdict.includes('buy now')) return;
+      isWatchlisted = !isWatchlisted;
+      const btn = document.getElementById('simPrimaryBtn');
+      const status = document.getElementById('simWatchStatus');
+
+      if (isWatchlisted) {
+        btn.textContent = 'tracking on watchlist';
+        btn.className = 'w-full py-3.5 px-4 rounded-2xl font-bold bg-emerald-600 text-white transition-all shadow-md text-xs tracking-wide';
+        status.textContent = 'active tracking';
+      } else {
+        btn.textContent = 'wait & watch';
+        btn.className = 'w-full py-3.5 px-4 rounded-2xl font-bold bg-[#3d2b1f] hover:bg-[#2c1e15] text-white transition-all shadow-md active:scale-[0.98] text-xs tracking-wide';
+        status.textContent = 'watching';
+      }
+    }
+
+    // Toggle Details Accordion
+    function toggleSimDetails() {
+      isDetailsOpen = !isDetailsOpen;
+      const content = document.getElementById('simDetailsContent');
+      const arrow = document.getElementById('simDetailsArrow');
+
+      if (isDetailsOpen) {
+        content.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        content.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Toggle Why Modal
+    function toggleWhyModal() {
+      document.getElementById('whyModal').classList.toggle('hidden');
+    }
+
+    // Initialize Simulator
+    window.onload = function() {
+      onSimTimeInput(35);
+      onSimSavingsInput(10);
+    }
+  </script>
+</body>
+</html>

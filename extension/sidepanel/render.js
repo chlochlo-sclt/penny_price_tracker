@@ -1,6 +1,7 @@
 // Rendering layer: turns data into what's on screen. These functions only
 // fill in text, toggle the `hidden` attribute and swap CSS classes on the
-// markup in sidepanel.html. All visual styling stays in sidepanel.css.
+// markup in sidepanel.html. All visual styling stays in sidepanel.css, which
+// also shows every piece of text in lowercase.
 
 const $ = (id) => document.getElementById(id);
 
@@ -9,6 +10,17 @@ const VIEWS = ["loading-view", "message-view", "recommendation-card"];
 /** Shows one of the three main views and hides the other two. */
 function showView(id) {
   for (const view of VIEWS) $(view).hidden = view !== id;
+  // The price range only makes sense next to a forecast.
+  if (id !== "recommendation-card") $("price-range").hidden = true;
+  syncDetailsCard();
+}
+
+/**
+ * The "details" card holds the price range and the watch list; it's shown
+ * when either has something to show (watchlist-ui.js calls this too).
+ */
+function syncDetailsCard() {
+  $("details-card").hidden = $("price-range").hidden && $("watchlist").hidden;
 }
 
 // ---- Formatting -----------------------------------------------------------
@@ -170,13 +182,14 @@ function renderDetectionProblem(detection) {
 
 // ---- Recommendation card --------------------------------------------------
 
-const VERDICT_LABELS = { buy_now: "Buy now", wait: "Wait" };
+const VERDICT_LABELS = { buy_now: "buy now", wait: "wait" };
 
-// "real" data gets no label.
+// Chip text for each data_source value in app/schemas.py.
 const DATA_SOURCE_LABELS = {
-  mixed: "Partly simulated data",
-  simulated: "Simulated data",
-  mock: "Mock data",
+  real: "real price data",
+  mixed: "partly simulated data",
+  simulated: "simulated data",
+  mock: "mock data",
 };
 
 /**
@@ -204,15 +217,10 @@ function renderChanceLine(prediction, request) {
   chance.className = "chance-line-pct";
   chance.textContent = formatProbability(prediction.p_drop);
   const by = formatShortDate(addDays(startOfDay(), days));
-  if (pct === 0) {
-    // At 0% any non-increase counts as a "drop" in the forecast.
-    line.replaceChildren(chance, ` chance it's at today's price or lower by ${by}`);
-    return;
-  }
   const amount = document.createElement("strong");
   amount.className = "chance-line-amount";
   amount.textContent = `${formatMoneyShort((request.price * pct) / 100, request.currency)}+`;
-  line.replaceChildren(chance, " chance you'll save ", amount, ` (${pct}%) by ${by}`);
+  line.replaceChildren(chance, " chance you'll save ", amount, ` (${pct}%) by ${by}.`);
 }
 
 /** Shows or hides the subtle "Updating…" state while the sliders' request runs. */
@@ -241,8 +249,9 @@ function renderUpdateError(err) {
 /**
  * Likely best price before the deadline (interval_low_usd–interval_high_usd,
  * the 10th–90th percentile of the lowest price; the high end is capped at
- * today's price) as a bar, with today's price marked. Positions are passed
- * to sidepanel.css as fractions of the bar's width.
+ * today's price) as a bar, with today's price and the most likely lowest
+ * price (predicted_low_usd, the median) marked. Positions are passed to
+ * sidepanel.css as fractions of the bar's width.
  */
 function renderPriceRange(prediction, request) {
   const low = prediction.interval_low_usd;
@@ -253,21 +262,56 @@ function renderPriceRange(prediction, request) {
   section.hidden = !usable;
   if (!usable) return;
 
-  const min = Math.min(low, today);
-  const max = Math.max(high, today);
+  // predicted_low_usd may be null (the schema allows it); then no marker.
+  const predicted = Number.isFinite(prediction.predicted_low_usd) ? prediction.predicted_low_usd : null;
+  const values = [low, high, today, ...(predicted != null ? [predicted] : [])];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
   const position = (value) => ((value - min) / (max - min)).toFixed(4);
+  // Set on the section so the bar and the labels under it share them.
   const bar = $("price-range-bar");
-  bar.style.setProperty("--band-start", position(low));
-  bar.style.setProperty("--band-end", position(high));
-  bar.style.setProperty("--today", position(today));
+  section.style.setProperty("--band-start", position(low));
+  section.style.setProperty("--band-end", position(high));
+  section.style.setProperty("--today", position(today));
+  $("price-range-predicted").hidden = predicted == null;
+  $("price-range-predicted-label").hidden = predicted == null;
+  if (predicted != null) {
+    section.style.setProperty("--predicted", position(predicted));
+    $("price-range-predicted-value").textContent = formatMoney(predicted);
+  }
   bar.setAttribute(
     "aria-label",
-    `Likely best price between ${formatMoney(low)} and ${formatMoney(high)}; today's price is ${formatMoney(today)}`,
+    `likely best price between ${formatMoney(low)} and ${formatMoney(high)}` +
+      (predicted != null ? `, most likely lowest ${formatMoney(predicted)}` : "") +
+      `; today's price is ${formatMoney(today)}`,
   );
 
-  $("best-price-range").textContent = `${formatMoney(low)}–${formatMoney(high)}`;
+  // Under the bar: the band's two ends, each under its own end. Above: today.
   $("price-range-low").textContent = formatMoney(low);
-  $("price-range-today-label").textContent = `Today ${formatMoney(today)}`;
+  $("best-price-range").textContent = formatMoney(high);
+  $("price-range-today-label").textContent = `today ${formatMoney(today)}`;
+}
+
+/** best_day is always set by the backend: today when buying now is best. */
+function formatBestDay(isoDate) {
+  return isoDate === toIsoDate(new Date()) ? `today (${formatDay(isoDate)})` : formatDay(isoDate);
+}
+
+// The small line under the chance line about real price history, keyed by
+// the state sidepanel.js tracks (see HISTORY_RETRY there).
+const HISTORY_NOTICES = {
+  fetching: "Loading real price history…",
+  gave_up: "Couldn't load real history yet. This estimate uses simulated prices.",
+  failed: "Couldn't load real history yet. This estimate uses simulated prices.",
+};
+
+/** Shows or hides the history notice; `state` is a HISTORY_NOTICES key or null. */
+function renderHistoryNotice(state) {
+  const notice = $("history-notice");
+  const text = HISTORY_NOTICES[state];
+  notice.hidden = !text;
+  notice.className = `history-notice history-notice--${state === "fetching" ? "fetching" : "unavailable"}`;
+  $("history-notice-text").textContent = text ?? "";
 }
 
 /**
@@ -278,37 +322,34 @@ function renderRecommendation(prediction, request) {
   const isLowConfidence = prediction.confidence === "low";
   const verdict = VERDICT_LABELS[prediction.recommendation];
 
-  // The modifier class picks the verdict's color and icon (clock / check).
+  // The modifier classes pick the verdict's color: "wait" in the text color,
+  // "buy now" in emerald, and any "leaning …" verdict in grey.
   const card = $("recommendation-card");
   card.className = "recommendation-card";
   card.classList.add(`recommendation-card--${prediction.recommendation.replace("_", "-")}`);
   card.classList.toggle("recommendation-card--low-confidence", isLowConfidence);
 
   // With low confidence the verdict is softened so it doesn't read as certain.
-  // (No notice when there's no forecast at all: the chance line says so.)
-  $("low-confidence-notice").hidden = !isLowConfidence || isNotEnoughData(prediction);
-  $("verdict").textContent = isLowConfidence ? `Leaning “${verdict}”` : verdict;
+  $("verdict").textContent = isLowConfidence ? `leaning ${verdict}` : verdict;
 
   renderChanceLine(prediction, request);
   renderUpdating(false);
 
-  // Trust row
+  // Chips: the backend's confidence and data_source
   const confidence = $("confidence");
-  confidence.textContent = `${prediction.confidence[0].toUpperCase()}${prediction.confidence.slice(1)} confidence`;
+  confidence.textContent = `${prediction.confidence} confidence`;
   confidence.className = `chip chip--confidence chip--confidence-${prediction.confidence}`;
-  const sourceLabel = DATA_SOURCE_LABELS[prediction.data_source];
   const sourceEl = $("data-source-label");
-  sourceEl.hidden = !sourceLabel;
-  sourceEl.textContent = sourceLabel ?? "";
+  sourceEl.textContent = DATA_SOURCE_LABELS[prediction.data_source];
   sourceEl.className = `chip chip--source chip--source-${prediction.data_source}`;
 
-  // "Why?" panel
+  // "why?" panel: the backend's own explanation
   $("explanation").textContent = prediction.explanation ?? "";
   $("expected-savings").textContent =
     `${formatPercent(prediction.expected_drop_pct)} (${formatMoney(prediction.expected_drop_usd)})`;
-  $("best-day-row").hidden = !prediction.best_day;
-  if (prediction.best_day) $("best-day").textContent = formatDay(prediction.best_day);
+  $("best-day").textContent = formatBestDay(prediction.best_day);
 
-  renderPriceRange(prediction, request);
   showView("recommendation-card");
+  renderPriceRange(prediction, request);
+  syncDetailsCard();
 }

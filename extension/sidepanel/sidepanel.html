@@ -6,153 +6,153 @@
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
-  <!-- Top to bottom: product line, verdict card (verdict, chance line,
-       sliders, actions, trust row, price range), Watching list, dev tools.
-       The page background is a seasonal mesh gradient (sidepanel.css); every
-       content section sits on a frosted "glass" card above it. -->
-  <div class="panel">
-    <header class="panel-header glass">
-      <!-- Clicking the logo 5 times turns Demo mode off (sidepanel.js). -->
-      <h1 class="panel-brand" id="panel-brand">
-        <img class="panel-brand-icon" src="../icons/icon-32.png" alt="" width="20" height="20">
-        <span class="panel-brand-name">penny</span>
-      </h1>
-      <!-- 1. The product on the active tab, kept small. -->
-      <section class="product-line" id="product-summary" aria-label="Detected product" hidden>
-        <p class="product-line-title" id="product-title"></p>
-        <p class="product-line-price" id="product-price"></p>
-      </section>
-    </header>
+  <!-- Seasonal mesh background: three slowly drifting blurred blobs whose
+       colors follow the deadline date's season (theme.js, sidepanel.css). -->
+  <div class="mesh" aria-hidden="true">
+    <span class="mesh-blob mesh-blob--1"></span>
+    <span class="mesh-blob mesh-blob--2"></span>
+    <span class="mesh-blob mesh-blob--3"></span>
+  </div>
 
+  <!-- Top to bottom: product line, verdict card with the coin, chance line,
+       sliders card, one context button, chips + "why?", details (price
+       range and watch list), dev tools. All text is lowercase (CSS). -->
+  <div class="panel">
     <main class="panel-main">
+      <!-- 1. The product on the active tab, kept small. -->
+      <p class="product-line" id="product-summary" aria-label="detected product" hidden>
+        <span class="product-line-title" id="product-title"></span>
+        <span class="product-line-separator" aria-hidden="true"> · </span>
+        <span class="product-line-price" id="product-price"></span>
+      </p>
+
       <!-- Exactly one of the three views below is visible at a time (render.js). -->
       <section class="status-view status-view--loading glass" id="loading-view" aria-live="polite">
         <div class="spinner" aria-hidden="true"></div>
-        <p class="status-view-text" id="loading-text">Loading…</p>
+        <p class="status-view-text" id="loading-text">loading…</p>
       </section>
 
       <section class="status-view glass" id="message-view" aria-live="polite" hidden>
         <h2 class="status-view-title" id="message-title"></h2>
         <p class="status-view-text" id="message-text"></p>
-        <button class="link-button status-view-retry" id="message-retry" type="button" hidden>Try again</button>
+        <button class="link-button status-view-retry" id="message-retry" type="button" hidden>try again</button>
       </section>
 
       <article class="recommendation-card" id="recommendation-card" hidden>
-        <!-- 2–3. Verdict and chance line, on the most opaque card so they stay
-             distinct from the seasonal background. The verdict shows an icon
-             AND a word, so it never relies on color alone; sidepanel.css shows
-             the icon that matches the card's modifier class. -->
-        <section class="verdict-card glass glass--strong" aria-label="Recommendation">
-          <h2 class="verdict">
-            <svg class="verdict-icon verdict-icon--wait" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-              <path d="M12 6.5V12l3.5 2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <svg class="verdict-icon verdict-icon--buy-now" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-              <path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span class="verdict-text" id="verdict"></span>
-          </h2>
-          <p class="recommendation-notice" id="low-confidence-notice" hidden>
-            Not enough price history for a confident call yet.
-          </p>
-
-          <!-- 3. Chance line: the hero number (render.js fills it). -->
-          <p class="chance-line" id="recommendation-result"></p>
-          <p class="recommendation-status" id="recommendation-status" aria-live="polite" hidden></p>
-        </section>
-
-        <!-- 4. Goal sliders (sliders.js). Moving them re-requests the forecast. -->
-        <section class="preference-controls" aria-label="Your goals">
-          <div class="preference-control preference-control--savings glass" id="savings-control">
-            <div class="preference-control-header">
-              <label class="preference-control-label" for="savings-slider">How much do you want to save?</label>
-              <output class="preference-control-value" id="savings-value" for="savings-slider"></output>
-            </div>
-            <input class="preference-slider preference-slider--coin" id="savings-slider" type="range" min="0" max="30" step="1">
-          </div>
-
-          <div class="preference-control preference-control--deadline glass" id="deadline-control">
-            <div class="preference-control-header">
-              <label class="preference-control-label" for="deadline-slider">When do you need it by?</label>
-              <output class="preference-control-value" id="deadline-value" for="deadline-slider"></output>
-            </div>
-            <div class="deadline-slider">
-              <div class="deadline-slider-markers" id="holiday-markers"></div>
-              <input class="preference-slider preference-slider--season" id="deadline-slider" type="range" min="0" max="5" step="1">
-              <span class="deadline-slider-custom-thumb" id="deadline-custom-thumb" aria-hidden="true" hidden></span>
-              <div class="deadline-slider-stops" aria-hidden="true">
-                <span class="deadline-slider-stop">1 wk</span>
-                <span class="deadline-slider-stop">2 wk</span>
-                <span class="deadline-slider-stop">3 wk</span>
-                <span class="deadline-slider-stop">1 mo</span>
-                <span class="deadline-slider-stop">2 mo</span>
-                <span class="deadline-slider-stop">3 mo</span>
-              </div>
-            </div>
-            <div class="deadline-custom">
-              <button class="link-button" id="pick-date-button" type="button">Pick a date</button>
-              <input class="deadline-date-input" id="deadline-date-input" type="date" aria-label="Deadline date" hidden>
+        <!-- 2. Verdict (Caveat) and the penny coin. Hovering the card tosses
+             the coin; clicking the coin 5 times leaves Demo mode. -->
+        <section class="verdict-card glass" aria-label="recommendation">
+          <h2 class="verdict" id="verdict"></h2>
+          <div class="coin-stage" id="coin" title="penny">
+            <span class="coin-shadow" aria-hidden="true"></span>
+            <div class="coin" aria-hidden="true">
+              <span class="coin-rim coin-rim--1"></span>
+              <span class="coin-rim coin-rim--2"></span>
+              <span class="coin-rim coin-rim--3"></span>
+              <span class="coin-rim coin-rim--4"></span>
+              <span class="coin-rim coin-rim--5"></span>
+              <span class="coin-face coin-face--back">p</span>
+              <span class="coin-face coin-face--front">p</span>
             </div>
           </div>
         </section>
 
-        <!-- 5. Actions (watchlist-ui.js). -->
-        <section class="action-card glass" aria-label="Actions">
-          <div class="recommendation-actions">
-            <button class="action-button action-button--buy" id="buy-now-button" type="button">Buy now</button>
-            <button class="action-button action-button--watch" id="watch-button" type="button">Wait &amp; watch</button>
+        <!-- 3. Chance line (render.js), plus small status lines. -->
+        <p class="chance-line" id="recommendation-result"></p>
+        <p class="recommendation-status" id="recommendation-status" aria-live="polite" hidden></p>
+        <p class="history-notice" id="history-notice" aria-live="polite" hidden>
+          <span class="history-notice-spinner" aria-hidden="true"></span>
+          <span id="history-notice-text"></span>
+        </p>
+
+        <!-- 4. Sliders (sliders.js). Moving them re-requests the forecast. -->
+        <section class="sliders-card glass" aria-label="your goals">
+          <div class="slider-control slider-control--deadline" id="deadline-control">
+            <label class="slider-control-label" for="deadline-slider">when do you need it by?</label>
+            <output class="slider-tag" id="deadline-value" for="deadline-slider"></output>
+            <input class="slider slider--deadline" id="deadline-slider" type="range" min="1" max="90" step="1">
+            <!-- Positioned at their real day on the 1–90 track (sidepanel.css). -->
+            <div class="slider-ticks slider-ticks--deadline" aria-hidden="true">
+              <span class="slider-tick">1 day</span>
+              <span class="slider-tick">2 wks</span>
+              <span class="slider-tick">1 mo</span>
+              <span class="slider-tick">2 mo</span>
+              <span class="slider-tick">3 mo</span>
+            </div>
           </div>
-          <p class="watch-confirmation" id="watch-confirmation" aria-live="polite" hidden></p>
+
+          <div class="slider-control slider-control--savings" id="savings-control">
+            <label class="slider-control-label" for="savings-slider">how much do you want to save?</label>
+            <output class="slider-tag" id="savings-value" for="savings-slider"></output>
+            <input class="slider slider--savings" id="savings-slider" type="range" min="1" max="30" step="1">
+            <div class="slider-ticks slider-ticks--savings" aria-hidden="true">
+              <span class="slider-tick">1%</span>
+              <span class="slider-tick">30%</span>
+            </div>
+          </div>
         </section>
 
-        <!-- 6–7. Trust row, "Why?" details and the price range. -->
-        <section class="details-card glass" aria-label="Forecast details">
-          <!-- 6. Trust row: confidence, data source, and "Why?" for the explanation. -->
-          <div class="trust-row">
-            <span class="chip chip--confidence" id="confidence"></span>
-            <span class="chip chip--source" id="data-source-label" hidden></span>
-            <button class="why-toggle" id="why-toggle" type="button" aria-expanded="false" aria-controls="why-panel">Why?</button>
-          </div>
-          <section class="why-panel" id="why-panel" aria-label="Why this recommendation" hidden>
-            <p class="why-panel-explanation" id="explanation"></p>
-            <dl class="why-panel-facts">
-              <div class="why-panel-fact">
-                <dt class="why-panel-fact-label">Typical drop, when it drops</dt>
-                <dd class="why-panel-fact-value" id="expected-savings"></dd>
-              </div>
-              <div class="why-panel-fact" id="best-day-row">
-                <dt class="why-panel-fact-label">Best day to buy</dt>
-                <dd class="why-panel-fact-value" id="best-day"></dd>
-              </div>
-            </dl>
-          </section>
+        <!-- 5. One button that depends on the verdict (watchlist-ui.js):
+             "wait & watch" / "watching", or "buy now at $X". -->
+        <button class="primary-button" id="primary-button" type="button"></button>
+        <p class="watch-confirmation" id="watch-confirmation" aria-live="polite" hidden></p>
 
-          <!-- 7. Likely best price before the deadline, as a bar with today's price marked. -->
+        <!-- 6. Chips and "why?" (the backend's own explanation). -->
+        <div class="chips-row">
+          <span class="chip chip--confidence" id="confidence"></span>
+          <span class="chip chip--source" id="data-source-label"></span>
+          <button class="why-toggle" id="why-toggle" type="button" aria-expanded="false" aria-controls="why-panel">why?</button>
+        </div>
+        <section class="why-panel glass" id="why-panel" aria-label="why this recommendation" hidden>
+          <p class="why-panel-explanation" id="explanation"></p>
+          <dl class="why-panel-facts">
+            <div class="why-panel-fact">
+              <dt class="why-panel-fact-label">typical drop, when it drops</dt>
+              <dd class="why-panel-fact-value" id="expected-savings"></dd>
+            </div>
+            <div class="why-panel-fact">
+              <dt class="why-panel-fact-label">best day to buy</dt>
+              <dd class="why-panel-fact-value" id="best-day"></dd>
+            </div>
+          </dl>
+        </section>
+      </article>
+
+      <!-- 7. Details: price range (when there's a forecast) and the watch
+           list (whenever something is watched). -->
+      <section class="details-card glass" id="details-card" hidden>
+        <button class="details-toggle" id="details-toggle" type="button" aria-expanded="false" aria-controls="details-content">
+          <span>details</span>
+          <span class="details-toggle-arrow" aria-hidden="true">▼</span>
+        </button>
+        <div class="details-content" id="details-content" hidden>
           <section class="price-range" id="price-range" aria-labelledby="price-range-title">
-            <p class="price-range-title" id="price-range-title">
-              Likely best price before your deadline:
-              <strong class="price-range-values" id="best-price-range"></strong>
-            </p>
+            <div class="price-range-header">
+              <span class="price-range-title" id="price-range-title">likely price range</span>
+              <span class="price-range-today-label" id="price-range-today-label"></span>
+            </div>
             <div class="price-range-bar" id="price-range-bar" role="img">
               <span class="price-range-band"></span>
+              <span class="price-range-predicted" id="price-range-predicted"></span>
               <span class="price-range-today"></span>
             </div>
             <div class="price-range-scale" aria-hidden="true">
-              <span class="price-range-scale-low" id="price-range-low"></span>
-              <span class="price-range-scale-today" id="price-range-today-label"></span>
+              <span id="price-range-low"></span>
+              <span id="best-price-range"></span>
             </div>
+            <p class="price-range-predicted-label" id="price-range-predicted-label">
+              <span class="price-range-predicted-key" aria-hidden="true"></span>
+              most likely lowest price: <strong id="price-range-predicted-value"></strong>
+            </p>
           </section>
-        </section>
-      </article>
-    </main>
 
-    <!-- 8. Watched products (watchlist-ui.js). Shown on every screen when non-empty. -->
-    <section class="watchlist glass" id="watchlist" aria-labelledby="watchlist-title" hidden>
-      <h2 class="watchlist-title" id="watchlist-title">Watching</h2>
-      <ul class="watchlist-items" id="watchlist-items"></ul>
-    </section>
+          <section class="watchlist" id="watchlist" aria-labelledby="watchlist-title" hidden>
+            <h3 class="watchlist-title" id="watchlist-title">watch list</h3>
+            <ul class="watchlist-items" id="watchlist-items"></ul>
+          </section>
+        </div>
+      </section>
+    </main>
 
     <template id="watchlist-item-template">
       <li class="watchlist-item">
@@ -161,58 +161,60 @@
           <p class="watchlist-item-target"></p>
           <p class="watchlist-item-status" hidden></p>
         </div>
-        <button class="watchlist-item-remove link-button" type="button">Remove</button>
+        <button class="watchlist-item-remove link-button" type="button">remove</button>
       </li>
     </template>
 
-    <!-- 9. Dev tools: unpacked installs only, collapsed by default, and hidden
+    <!-- 8. Dev tools: unpacked installs only, collapsed by default, and hidden
          entirely in Demo mode (see sidepanel.js). -->
     <details class="dev-panel glass" id="dev-panel" hidden>
-      <summary class="dev-panel-summary">Dev tools</summary>
+      <summary class="dev-panel-summary">dev tools</summary>
       <label class="dev-panel-toggle">
         <input type="checkbox" id="dev-demo-mode">
-        <span>Demo mode: hide dev tools</span>
+        <span>demo mode: hide dev tools</span>
       </label>
-      <p class="dev-panel-hint">To show them again, press Alt+Shift+D in the panel or click the penny logo 5 times.</p>
+      <p class="dev-panel-hint">to show them again, press alt+shift+d in the panel or click the coin 5 times.</p>
       <label class="dev-panel-field">
-        <span class="dev-panel-label">Product</span>
+        <span class="dev-panel-label">product</span>
         <select class="dev-panel-select" id="dev-detection">
-          <option value="live">Live: ask the current tab</option>
-          <option value="ok">Mock: product found</option>
-          <option value="price_not_found">Mock: price not found</option>
-          <option value="unavailable">Mock: item unavailable</option>
-          <option value="not_product_page">Mock: not a product page</option>
-          <option value="no_content_script">Mock: unsupported site</option>
-          <option value="error">Mock: detection error</option>
+          <option value="live">live: ask the current tab</option>
+          <option value="ok">mock: product found</option>
+          <option value="price_not_found">mock: price not found</option>
+          <option value="unavailable">mock: item unavailable</option>
+          <option value="not_product_page">mock: not a product page</option>
+          <option value="no_content_script">mock: unsupported site</option>
+          <option value="error">mock: detection error</option>
         </select>
       </label>
       <label class="dev-panel-field">
-        <span class="dev-panel-label">Data source</span>
+        <span class="dev-panel-label">data source</span>
         <select class="dev-panel-select" id="dev-source">
-          <option value="backend">Backend (POST /predict)</option>
-          <option value="mock">Mock (file below)</option>
+          <option value="backend">backend (post /predict)</option>
+          <option value="mock">mock (file below)</option>
         </select>
       </label>
       <label class="dev-panel-field">
-        <span class="dev-panel-label">Mock file</span>
+        <span class="dev-panel-label">mock file</span>
         <select class="dev-panel-select" id="dev-prediction">
           <option value="predict.json">predict.json</option>
           <option value="predict_wait.json">predict_wait.json</option>
           <option value="predict_buy_now.json">predict_buy_now.json</option>
           <option value="predict_low_confidence.json">predict_low_confidence.json</option>
           <option value="predict_not_enough_data.json">predict_not_enough_data.json</option>
-          <option value="__loading">Never finishes (loading)</option>
-          <option value="__error">Request fails (error)</option>
+          <option value="predict_fetching.json">predict_fetching.json (stays fetching)</option>
+          <option value="__fetching_then_ready">fetching, then real history on retry</option>
+          <option value="__loading">never finishes (loading)</option>
+          <option value="__error">request fails (error)</option>
         </select>
       </label>
       <div class="dev-panel-group">
         <label class="dev-panel-field">
-          <span class="dev-panel-label">Watched item</span>
+          <span class="dev-panel-label">watched item</span>
           <select class="dev-panel-select" id="dev-watch"></select>
         </label>
         <div class="dev-panel-buttons">
-          <button class="dev-panel-button" id="dev-simulate-drop" type="button">Simulate price drop</button>
-          <button class="dev-panel-button" id="dev-simulate-deadline" type="button">Simulate deadline approaching</button>
+          <button class="dev-panel-button" id="dev-simulate-drop" type="button">simulate price drop</button>
+          <button class="dev-panel-button" id="dev-simulate-deadline" type="button">simulate deadline approaching</button>
         </div>
         <p class="dev-panel-status" id="dev-simulate-status" aria-live="polite"></p>
       </div>

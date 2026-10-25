@@ -53,16 +53,24 @@ async function scrollPageToBuyButton() {
   }
 }
 
+// How sure the forecast must be before penny says "Wait". There's no UI for
+// it yet. app/schemas.py leaves min_confidence_pct unset (None), and the
+// backend then falls back to 65 (DEFAULTS in app/decision.py), so send 65.
+const DEFAULT_MIN_CONFIDENCE_PCT = 65;
+
 /**
- * The full Preferences object for app/schemas.py, built from the slider
- * values. There's no UI for risk tolerance or budget, so those are fixed.
+ * The Preferences object for app/schemas.py, built from the slider values:
+ *   min_savings_pct     1–50   only count drops at least this big (%)
+ *   min_confidence_pct  50–95  fixed for now (see above)
+ *   deadline_days       1–90   how long the shopper can wait
+ * risk_tolerance (a shortcut for min_confidence_pct) isn't sent, because we
+ * send the number itself.
  */
 function getPreferences({ min_savings_pct, deadline_days }) {
   return {
-    risk_tolerance: "balanced", // "cautious" | "balanced" | "bold"
-    min_savings_pct,            // only count drops at least this big (%)
-    deadline_days,              // 1–90: how long the shopper can wait
-    budget_usd: null,           // no budget: never "buy because it's under budget"
+    min_savings_pct,
+    min_confidence_pct: DEFAULT_MIN_CONFIDENCE_PCT,
+    deadline_days,
   };
 }
 

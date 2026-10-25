@@ -5,8 +5,10 @@
   "expected_drop_usd": 0.0,
   "interval_low_usd": 119.99,
   "interval_high_usd": 119.99,
+  "history_status": "ready",
+  "predicted_low_usd": 119.99,
   "confidence": "low",
-  "best_day": null,
+  "best_day": "2026-10-24",
   "explanation": "We only have 9 days of price history for this item, so we can't forecast a drop. Treat this as a rough call.",
   "data_source": "real"
 }

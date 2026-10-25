@@ -1,93 +1,201 @@
 /* penny side panel.
    Class names follow block / block-element / block--modifier.
-   Every color is a custom property in the :root block below. */
+   Every color is a custom property in the "Colors" section below; seasons
+   and coins are blended by theme.js, which only picks palettes. */
+
+/* ==========================================================================
+   Fonts (bundled in extension/fonts, SIL Open Font License)
+   ========================================================================== */
+
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/inter-latin-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Caveat";
+  src: url("../fonts/caveat-latin-variable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ==========================================================================
    Colors
    ========================================================================== */
 
 :root {
-  /* ---- Base ---- */
-  --color-text: #1f2328;
-  --color-muted: #57606a;        /* 6:1 on white, still above 4.5:1 on seasonal tints */
-  --color-border: #d0d7de;
-  --color-surface: #f6f8fa;
-  --color-background: #ffffff;
-  --color-error: #cf222e;
-  --color-info: #0969da;
-  --color-success: #1a7f37;
-  --color-focus: #0969da;
-  --color-track: #e4e8ec;        /* empty part of slider tracks and the price bar */
+  /* ---- Light theme (every season except December) ---- */
+  --text: #1e293b;
+  --text-muted: #3b4758;         /* 4.5:1+ on every light-season card */
+  --link: #1e293b;
+  --error: #b91c1c;
+  --success: #047857;
+  --focus: #2563eb;
 
-  /* ---- Verdict (never seasonal; dark enough for 7:1+ on white) ---- */
-  --verdict-buy: #116329;
-  --verdict-wait: #0a3069;
-  --verdict-uncertain: #57606a;
+  --glass-background: rgb(255 255 255 / 0.62);
+  --glass-background-strong: rgb(255 255 255 / 0.8);  /* verdict card */
+  --glass-background-soft: rgb(255 255 255 / 0.58);   /* product + chance line plates */
+  --glass-background-solid: rgb(255 255 255 / 0.92);  /* no backdrop-filter */
+  --glass-border: rgb(255 255 255 / 0.6);
+  --glass-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+  --glass-blur: 14px;
 
-  /* ---- Action buttons ---- */
-  --button-buy-background: #116329;
-  --button-buy-text: #ffffff;
+  --chip-background: rgb(255 255 255 / 0.6);
+  --chip-border: rgb(148 163 184 / 0.55);
+  --tag-background: rgb(255 255 255 / 0.85);
+  --tag-border: rgb(226 232 240 / 0.8);
+  --tag-text: #1e293b;
+  --track: rgb(0 0 0 / 0.12);
+  --thumb: #ffffff;
+  --thumb-border: rgb(0 0 0 / 0.12);
+  --divider: rgb(148 163 184 / 0.3);
 
-  /* ---- Confidence chips (the word is always shown too) ---- */
-  --confidence-high: #1a7f37;
-  --confidence-medium: #9a6700;
-  --confidence-low: #cf222e;
+  /* Verdict: "wait" in the text color, "buy now" in emerald, "leaning …" grey.
+     Never seasonal. The light-theme emerald is darkened for 5:1+ contrast. */
+  --verdict-wait: var(--text);
+  --verdict-buy: #047857;
+  --verdict-leaning: #5b6678;
 
-  /* ---- Price range bar ---- */
-  --range-band: #8c959f;
-  --range-today: #1f2328;
+  /* The context button */
+  --button-watch-background: #3d2b1f;
+  --button-watch-hover: #2c1e15;
+  --button-watch-text: #ffffff;
+  --button-watching-background: #047857;
+  --button-watching-text: #ffffff;
+  --button-buy-background: #10b981;
+  --button-buy-hover: #34d399;
+  --button-buy-text: #022c22;
 
-  /* ---- Savings slider: coin palettes (theme.js blends copper → silver → gold).
-         -1 is the strong color (thumb, end of the fill), -2 the light one. ---- */
-  --coin-copper-1: #b0602a;
-  --coin-copper-2: #e7a774;
-  --coin-silver-1: #7d8691;
-  --coin-silver-2: #d4d9df;
-  --coin-gold-1: #b88a00;
-  --coin-gold-2: #f3d46b;
+  /* Confidence chip dots (the word is always shown too) */
+  --confidence-high: #047857;
+  --confidence-medium: #b45309;
+  --confidence-low: #b91c1c;
 
-  /* ---- Date slider: seasonal palettes (theme.js blends between them by the
-         deadline date; anchor dates are in SEASON_ANCHORS in theme.js). ---- */
-  --season-early-fall-1: #c2570c;        /* orange */
-  --season-early-fall-2: #e9a23b;        /* golden */
-  --season-halloween-1: #e05a00;         /* pumpkin orange */
-  --season-halloween-2: #5b2a86;         /* purple touch */
-  --season-november-1: #b7791f;          /* warm amber */
-  --season-november-2: #ecc15b;          /* gold */
-  --season-winter-1: #1f78b8;            /* winter blue (leans cyan so blends from amber pass through teal, not purple) */
-  --season-winter-2: #a7cdf3;            /* icy blue */
-  --season-christmas-1: #1f7a3f;         /* pine green */
-  --season-christmas-2: #c0392b;         /* holly red */
-  --season-new-year-1: #c0262d;          /* red */
-  --season-new-year-2: #7a1f3d;          /* burgundy */
-  --season-late-winter-1: #8c2346;       /* burgundy */
-  --season-late-winter-2: #d46a8c;       /* easing into pink */
-  --season-late-winter-pink-1: #cc3f78;
-  --season-late-winter-pink-2: #f4b2c8;
-  --season-spring-1: #de4f93;            /* cherry blossom */
-  --season-spring-2: #93d6a0;            /* pastel green */
-  --season-summer-1: #d9a400;            /* yellow */
-  --season-summer-2: #8fd0f0;            /* baby blue */
+  /* Price range bar */
+  --range-track: rgb(148 163 184 / 0.35);
+  --range-band: rgb(217 119 6 / 0.7);
+  --range-today: #0f172a;
+  --range-predicted: #3d2b1f;
 
-  /* ---- Seasonal mesh background (whole panel) ----
-     Four large blurred blobs of the season's two colors over a pale base.
-     Raise --mesh-blob-strength for a bolder background; the glass cards
-     below keep text readable either way (contrast is checked per season). */
-  --mesh-blob-strength: 55%;
-  --mesh-base-strength: 14%;     /* how much accent-2 tints the base */
-  --mesh-base-white: #fbfbfd;
-  --mesh-blur: 48px;
+  /* Coin (the penny) */
+  --coin-face-light: #f7b27a;
+  --coin-face: #c8692e;
+  --coin-face-dark: #8a3f17;
+  --coin-face-ring: #e7a774;
+  --coin-letter: #3b1a07;
+  --coin-rim-1: #6b3210;
+  --coin-rim-2: #8a4519;
+  --coin-shadow: rgb(2 6 23 / 0.25);
 
-  /* ---- Frosted glass cards ---- */
-  --glass-background: rgb(255 255 255 / 0.74);
-  --glass-background-strong: rgb(255 255 255 / 0.88);   /* verdict card */
-  --glass-background-solid: rgb(255 255 255 / 0.95);    /* no backdrop-filter */
-  --glass-border: rgb(255 255 255 / 0.75);
-  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 28px rgb(0 0 0 / 0.08);
-  --glass-blur: 22px;
+  /* Savings track: copper → silver → gold (theme.js blends by percent) */
+  --coin-track-start: #b45309;
+  --coin-copper-1: #d97706;
+  --coin-copper-2: #b45309;
+  --coin-silver-1: #94a3b8;
+  --coin-silver-2: #cbd5e1;
+  --coin-gold-1: #f59e0b;
+  --coin-gold-2: #fcd34d;
 
-  /* Color fades while dragging. Set to 0s for prefers-reduced-motion below. */
-  --color-transition-duration: 0.35s;
+  /* ---- Seasons: three mesh blobs (-1/-2/-3) and a light base each.
+          Anchor dates are SEASON_ANCHORS in theme.js. -1 also fills the
+          date slider. ---- */
+  --season-early-fall-1: #ea580c;
+  --season-early-fall-2: #f59e0b;
+  --season-early-fall-3: #fbbf24;
+  --season-early-fall-base: #fff7ed;
+
+  --season-halloween-1: #fb923c;
+  --season-halloween-2: #f59e0b;
+  --season-halloween-3: #7e22ce;
+  --season-halloween-base: #fff7ed;
+
+  --season-november-1: #d97706;
+  --season-november-2: #b45309;
+  --season-november-3: #fef3c7;
+  --season-november-base: #fffbeb;
+
+  --season-winter-1: #1d4ed8;     /* December is dark: see [data-theme="dark"] */
+  --season-winter-2: #0369a1;
+  --season-winter-3: #4f46e5;
+  --season-winter-base: #eff6ff;
+
+  --season-christmas-1: #15803d;
+  --season-christmas-2: #b91c1c;
+  --season-christmas-3: #1d4ed8;
+  --season-christmas-base: #f0fdf4;
+
+  --season-new-year-1: #9f1239;
+  --season-new-year-2: #881337;
+  --season-new-year-3: #f43f5e;
+  --season-new-year-base: #fff1f2;
+
+  --season-late-winter-1: #881337;
+  --season-late-winter-2: #be185d;
+  --season-late-winter-3: #f9a8d4;
+  --season-late-winter-base: #fdf2f8;
+
+  --season-late-winter-pink-1: #db2777;
+  --season-late-winter-pink-2: #f472b6;
+  --season-late-winter-pink-3: #fbcfe8;
+  --season-late-winter-pink-base: #fdf2f8;
+
+  --season-spring-1: #f472b6;
+  --season-spring-2: #86efac;
+  --season-spring-3: #fbcfe8;
+  --season-spring-base: #fdf4f7;
+
+  --season-summer-1: #facc15;
+  --season-summer-2: #7dd3fc;
+  --season-summer-3: #fde68a;
+  --season-summer-base: #fefce8;
+
+  --mesh-blob-opacity: 0.6;
+  --mesh-blur: 64px;
+
+  /* Color fades while dragging. 0s with prefers-reduced-motion (below). */
+  --color-transition-duration: 0.7s;
+}
+
+/* ---- December: dark, high-contrast mode (theme.js sets data-theme) ---- */
+:root[data-theme="dark"] {
+  --text: #ffffff;
+  --text-muted: #cbd5e1;
+  --link: #ffffff;
+  --error: #fca5a5;
+  --success: #6ee7b7;
+  --focus: #93c5fd;
+
+  /* Navy-tinted glass with a light sheen: still frosted, but keeps white
+     text crisp over saturated blobs (plain white/10 drops to ~4.6:1). */
+  --glass-background: linear-gradient(rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.08)), rgb(11 19 41 / 0.45);
+  --glass-background-strong: linear-gradient(rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.06)), rgb(11 19 41 / 0.6);
+  --glass-background-soft: rgb(11 19 41 / 0.45);
+  --glass-background-solid: rgb(15 23 42 / 0.94);
+  --glass-border: rgb(255 255 255 / 0.2);
+  --glass-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+
+  --chip-background: rgb(255 255 255 / 0.12);
+  --chip-border: rgb(255 255 255 / 0.25);
+  --track: rgb(255 255 255 / 0.2);
+  --divider: rgb(255 255 255 / 0.18);
+
+  --verdict-buy: #34d399;
+  --verdict-leaning: #a3b1c6;
+
+  --confidence-high: #34d399;
+  --confidence-medium: #fbbf24;
+  --confidence-low: #f87171;
+
+  --range-track: rgb(255 255 255 / 0.2);
+  --range-band: rgb(251 191 36 / 0.75);
+  --range-today: #ffffff;
+  --range-predicted: #fde68a;
+
+  --mesh-dark-base: #0b1329;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -96,44 +204,25 @@
   }
 }
 
-/* Registered so they can transition: color-mix() results animate smoothly
+/* Registered so they can transition: the color-mix() results below animate
    when theme.js points the from/to/mix properties at a new blend. Seasons
-   blend in oklch, which travels around the hue wheel, so in-between colors
-   stay vivid instead of going muddy (green → red passes through gold). Coins
-   blend in oklab: silver has almost no hue, and oklab keeps the metals clean. */
-@property --season-accent {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #b7791f;
-}
+   blend in oklch (vivid in-betweens); coins in oklab (clean metals). */
+@property --season-blob-1 { syntax: "<color>"; inherits: true; initial-value: #d97706; }
+@property --season-blob-2 { syntax: "<color>"; inherits: true; initial-value: #b45309; }
+@property --season-blob-3 { syntax: "<color>"; inherits: true; initial-value: #fef3c7; }
+@property --season-base { syntax: "<color>"; inherits: true; initial-value: #fffbeb; }
+@property --coin-accent { syntax: "<color>"; inherits: true; initial-value: #d97706; }
 
-@property --season-accent-2 {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #ecc15b;
-}
-
-/* The season blend for the whole panel. theme.js sets --season-from/to/mix
-   on <html> (sliders.js calls it whenever the deadline changes), so every
-   element inherits the same two colors. */
 :root {
-  --season-accent: color-mix(in oklch, var(--season-from-1), var(--season-to-1) var(--season-mix));
-  --season-accent-2: color-mix(in oklch, var(--season-from-2), var(--season-to-2) var(--season-mix));
+  --season-blob-1: color-mix(in oklch, var(--season-from-1), var(--season-to-1) var(--season-mix));
+  --season-blob-2: color-mix(in oklch, var(--season-from-2), var(--season-to-2) var(--season-mix));
+  --season-blob-3: color-mix(in oklch, var(--season-from-3), var(--season-to-3) var(--season-mix));
+  --season-base: color-mix(in oklab, var(--season-from-base), var(--season-to-base) var(--season-mix));
   transition:
-    --season-accent var(--color-transition-duration),
-    --season-accent-2 var(--color-transition-duration);
-}
-
-@property --coin-accent {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #b0602a;
-}
-
-@property --coin-accent-2 {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #e7a774;
+    --season-blob-1 var(--color-transition-duration),
+    --season-blob-2 var(--color-transition-duration),
+    --season-blob-3 var(--color-transition-duration),
+    --season-base var(--color-transition-duration);
 }
 
 /* ==========================================================================
@@ -149,133 +238,187 @@
   display: none !important;
 }
 
-/* Slightly large type and generous spacing: readable from a step away.
-   The panel is resizable (about 320–500px+), so nothing has a fixed width. */
+/* All text is lowercase, including the product title and the backend's
+   explanation. Form controls don't inherit this by default. */
+html {
+  text-transform: lowercase;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  text-transform: inherit;
+  color: inherit;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
   line-height: 1.45;
-  color: var(--color-text);
-  background: color-mix(in oklab, var(--season-accent-2) var(--mesh-base-strength), var(--mesh-base-white));
+  color: var(--text);
+  background: var(--season-base);
+  transition: color var(--color-transition-duration), background-color var(--color-transition-duration);
 }
 
-/* Apple-style mesh gradient: blurred color blobs behind everything, fixed
-   to the viewport so it stays put while the panel scrolls. Its colors come
-   from the animated --season-accent / --season-accent-2, so it fades to the
-   new season as the date slider moves (instantly with reduced motion). */
-body::before {
-  content: "";
-  position: fixed;
-  inset: calc(var(--mesh-blur) * -2);
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(38% 32% at 18% 12%, color-mix(in oklab, var(--season-accent) var(--mesh-blob-strength), transparent), transparent 72%),
-    radial-gradient(42% 36% at 88% 24%, color-mix(in oklab, var(--season-accent-2) var(--mesh-blob-strength), transparent), transparent 72%),
-    radial-gradient(46% 34% at 14% 68%, color-mix(in oklab, var(--season-accent-2) var(--mesh-blob-strength), transparent), transparent 72%),
-    radial-gradient(44% 38% at 86% 90%, color-mix(in oklab, var(--season-accent) var(--mesh-blob-strength), transparent), transparent 72%);
-  filter: blur(var(--mesh-blur));
-}
-
-/* Frosted glass: every content section sits on one of these, so text is
-   always on a light, mostly-opaque surface whatever the season. */
-.glass {
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  background: var(--glass-background);
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-}
-
-.glass--strong {
-  background: var(--glass-background-strong);
-}
-
-/* No backdrop blur available: use a nearly solid card instead. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass,
-  .glass--strong {
-    background: var(--glass-background-solid);
-  }
+:root[data-theme="dark"] body {
+  background: var(--mesh-dark-base);
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-focus);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
-/* Full-height column so dev tools sit at the bottom of the panel. */
 .panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  max-width: 640px;
+  max-width: 560px;
   margin: 0 auto;
 }
 
 .panel-main {
-  padding: 12px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
 }
 
 .link-button {
   padding: 0;
   border: none;
   background: none;
-  font: inherit;
-  font-size: 14px;
-  color: var(--color-info);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--link);
+  text-decoration: underline;
   cursor: pointer;
 }
 
-.link-button:hover {
-  text-decoration: underline;
+/* ==========================================================================
+   Mesh background: three blurred, slowly drifting blobs
+   ========================================================================== */
+
+.mesh {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(var(--mesh-blur));
+  opacity: var(--mesh-blob-opacity);
+}
+
+.mesh-blob--1 {
+  top: -40px;
+  left: -40px;
+  width: 256px;
+  height: 256px;
+  background: var(--season-blob-1);
+  animation: float-blob-1 12s ease-in-out infinite;
+}
+
+.mesh-blob--2 {
+  top: 33%;
+  right: -64px;
+  width: 288px;
+  height: 288px;
+  background: var(--season-blob-2);
+  animation: float-blob-2 15s ease-in-out infinite;
+}
+
+.mesh-blob--3 {
+  bottom: -40px;
+  left: 40px;
+  width: 240px;
+  height: 240px;
+  background: var(--season-blob-3);
+  opacity: calc(var(--mesh-blob-opacity) - 0.1);
+  animation: float-blob-3 10s ease-in-out infinite;
+}
+
+@keyframes float-blob-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.15); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+@keyframes float-blob-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-35px, 30px) scale(1.1); }
+  66% { transform: translate(25px, -25px) scale(0.95); }
+}
+
+@keyframes float-blob-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 35px) scale(1.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-blob { animation: none; }
 }
 
 /* ==========================================================================
-   1. Header and product line
+   Frosted glass
    ========================================================================== */
 
-.panel-header {
-  margin: 12px 12px 0;
-  padding: 14px 18px;
+.glass {
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--glass-background);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 
-.panel-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  user-select: none;
+/* No backdrop blur available: a nearly solid card instead. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .product-line,
+  .chance-line {
+    background: var(--glass-background-solid);
+  }
 }
 
-.panel-brand-icon {
-  display: block;
-}
+/* ==========================================================================
+   1. Product line
+   ========================================================================== */
 
+/* Sits on a soft glass plate so it stays readable over any blob. */
 .product-line {
-  margin-top: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  align-self: center;
+  max-width: 100%;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--glass-background-soft);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 .product-line-title {
-  margin: 0;
-  font-size: 14px;
-  color: var(--color-text);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: inline-block;
+  max-width: 28ch;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 .product-line-price {
-  margin: 2px 0 0;
-  font-size: 14px;
   font-weight: 600;
-  color: var(--color-muted);
+  color: var(--text);
 }
 
 /* ==========================================================================
@@ -292,41 +435,38 @@ body::before {
   gap: 12px;
 }
 
-.status-view--info {
-  border-left: 4px solid var(--color-info);
-}
-
-.status-view--warning {
-  border-left: 4px solid var(--confidence-medium);
-}
-
-.status-view--error {
-  border-left: 4px solid var(--color-error);
-}
+.status-view--info { border-left: 4px solid var(--focus); }
+.status-view--warning { border-left: 4px solid var(--confidence-medium); }
+.status-view--error { border-left: 4px solid var(--error); }
 
 .status-view-title {
   margin: 0 0 6px;
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .status-view-text {
   margin: 0;
-  color: var(--color-muted);
+  color: var(--text-muted);
 }
 
 .status-view-retry {
   margin-top: 10px;
 }
 
-.spinner {
+.spinner,
+.history-notice-spinner {
   flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--divider);
+  border-top-color: var(--text);
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner {
   width: 20px;
   height: 20px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-info);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  border-width: 3px;
 }
 
 @keyframes spin {
@@ -334,7 +474,8 @@ body::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner { animation-duration: 3s; }
+  .spinner,
+  .history-notice-spinner { animation-duration: 3s; }
 }
 
 /* ==========================================================================
@@ -344,351 +485,385 @@ body::before {
 .recommendation-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.verdict-card,
-.details-card {
-  display: flex;
-  flex-direction: column;
   gap: 14px;
-  padding: 18px 20px;
-}
-
-.action-card {
-  padding: 14px;
 }
 
 /* While a slider-triggered request runs, dim the result but keep it readable. */
 .recommendation-card--updating .verdict,
-.recommendation-card--updating .chance-line,
-.recommendation-card--updating .trust-row,
-.recommendation-card--updating .price-range {
-  opacity: 0.5;
+.recommendation-card--updating .chance-line {
+  opacity: 0.55;
   transition: opacity 0.15s;
 }
 
-/* ---- 2. Verdict: icon + word, in fixed (non-seasonal) colors ---- */
+/* ---- 2. Verdict card and coin ---- */
 
-.verdict {
+.verdict-card {
+  background: var(--glass-background-strong);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  padding: 16px 18px;
+  cursor: default;
+}
+
+.verdict {
   margin: 0;
-  font-size: clamp(40px, 12vw, 56px);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-family: "Caveat", cursive;
+  font-size: clamp(48px, 15vw, 60px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--verdict-wait);
+  transition: color var(--color-transition-duration);
 }
 
-.verdict-icon {
-  flex: none;
-  width: 0.85em;
-  height: 0.85em;
-}
-
-.recommendation-card--wait .verdict { color: var(--verdict-wait); }
 .recommendation-card--buy-now .verdict { color: var(--verdict-buy); }
-.recommendation-card--wait .verdict-icon--buy-now,
-.recommendation-card--buy-now .verdict-icon--wait { display: none; }
+.recommendation-card--low-confidence .verdict { color: var(--verdict-leaning); }
 
-.recommendation-card--low-confidence .verdict {
-  font-size: clamp(30px, 9vw, 40px);
-  color: var(--verdict-uncertain);
+/* The coin rests tilted about 30° so its face and its edge both show. Five
+   rim discs stacked between the two faces give it visible thickness.
+   Hovering the verdict card tosses it (no toss with reduced motion). */
+.coin-stage {
+  --coin-size: 46px;
+  --coin-rest: rotateY(30deg) rotateX(12deg);
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(var(--coin-size) + 16px);
+  height: calc(var(--coin-size) + 16px);
+  perspective: 800px;
+  cursor: pointer;
 }
 
-.recommendation-notice {
-  margin: -6px 0 0;
-  font-size: 14px;
-  color: var(--color-muted);
+.coin {
+  position: relative;
+  width: var(--coin-size);
+  height: var(--coin-size);
+  transform-style: preserve-3d;
+  transform: var(--coin-rest);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ---- 3. Chance line ---- */
+.coin-face,
+.coin-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.coin-face {
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--coin-face-ring);
+  background: radial-gradient(circle at 35% 30%, var(--coin-face-light), var(--coin-face) 55%, var(--coin-face-dark));
+  box-shadow: inset 0 0 0 3px rgb(94 42 12 / 0.35);
+  font-family: "Inter", sans-serif;
+  font-size: calc(var(--coin-size) * 0.5);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--coin-letter);
+  backface-visibility: hidden;
+}
+
+.coin-face--front { transform: translateZ(3px); }
+.coin-face--back { transform: rotateY(180deg) translateZ(3px); }
+
+.coin-rim { background: var(--coin-rim-1); }
+.coin-rim--1 { transform: translateZ(-2px); }
+.coin-rim--2 { transform: translateZ(-1px); background: var(--coin-rim-2); }
+.coin-rim--3 { transform: translateZ(0); }
+.coin-rim--4 { transform: translateZ(1px); background: var(--coin-rim-2); }
+.coin-rim--5 { transform: translateZ(2px); }
+
+.coin-shadow {
+  position: absolute;
+  bottom: 2px;
+  width: 32px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--coin-shadow);
+  filter: blur(3px);
+}
+
+.verdict-card:hover .coin {
+  animation: coin-toss 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.verdict-card:hover .coin-shadow {
+  animation: coin-shadow-pulse 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes coin-toss {
+  0% { transform: translateY(0) rotateY(30deg) rotateX(12deg) scale(1); }
+  50% { transform: translateY(-56px) rotateY(0deg) rotateX(732deg) scale(1.2); }
+  100% { transform: translateY(0) rotateY(30deg) rotateX(1452deg) scale(1); }
+}
+
+@keyframes coin-shadow-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(2.2); opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict-card:hover .coin,
+  .verdict-card:hover .coin-shadow { animation: none; }
+  .coin { transition: none; }
+}
+
+/* ---- 3. Chance line and small status lines ---- */
 
 .chance-line {
   margin: 0;
-  font-size: 19px;
-  line-height: 1.35;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--glass-background-soft);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 
-.chance-line-pct {
-  display: block;
-  font-size: 44px;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-
+.chance-line-pct,
 .chance-line-amount {
   font-weight: 700;
 }
 
 .chance-line--no-data {
-  font-size: 17px;
-  color: var(--color-muted);
+  color: var(--text-muted);
 }
 
-.recommendation-status {
-  margin: -6px 0 0;
-  font-size: 14px;
-  color: var(--color-muted);
+.recommendation-status,
+.history-notice {
+  margin: -6px 4px 0;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .recommendation-status--error {
-  color: var(--color-error);
+  color: var(--error);
+}
+
+.history-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-notice-spinner {
+  width: 14px;
+  height: 14px;
+}
+
+.history-notice--unavailable .history-notice-spinner {
+  display: none;
 }
 
 /* ==========================================================================
-   4. Sliders (sliders.js, colors from theme.js)
+   4. Sliders
    ========================================================================== */
 
-.preference-controls {
+.sliders-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.preference-control {
-  --thumb-size: 24px;
+  gap: 20px;
   padding: 16px 18px;
+  border-radius: 24px;
 }
 
-.preference-control-header {
+.slider-control {
+  --thumb-size: 22px;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 4px 12px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.preference-control-label {
-  font-size: 15px;
-  color: var(--color-muted);
-}
-
-.preference-control-value {
-  font-size: 15px;
+.slider-control-label {
+  font-family: "Caveat", cursive;
+  font-size: 26px;
   font-weight: 700;
+  line-height: 1.1;
 }
 
-/* Savings: copper → silver → gold */
-.preference-control--savings {
-  --coin-accent: color-mix(in oklab, var(--coin-from-1), var(--coin-to-1) var(--coin-mix));
-  --coin-accent-2: color-mix(in oklab, var(--coin-from-2), var(--coin-to-2) var(--coin-mix));
-  --slider-start: var(--coin-accent-2);
-  --slider-end: var(--coin-accent);
-  transition:
-    --coin-accent var(--color-transition-duration),
-    --coin-accent-2 var(--color-transition-duration);
+.slider-tag {
+  align-self: center;
+  padding: 4px 12px;
+  border: 1px solid var(--tag-border);
+  border-radius: 999px;
+  background: var(--tag-background);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tag-text);
+  white-space: nowrap;
 }
 
-/* Date: the deadline's season (blended on :root above) */
-.preference-control--deadline {
-  --slider-start: var(--season-accent-2);
-  --slider-end: var(--season-accent);
-}
-
-/* Custom range input: a filled track up to the thumb (--fill-fraction, set
-   by sliders.js) and a round thumb with a white ring and dark outline, so it
-   stays visible even on light palettes like summer yellow. */
-.preference-slider {
+.slider {
   -webkit-appearance: none;
   appearance: none;
-  display: block;
   width: 100%;
   height: var(--thumb-size);
-  margin: 10px 0 0;
+  margin: 0;
   background: transparent;
   cursor: pointer;
 }
 
-.preference-slider::-webkit-slider-runnable-track {
-  height: 10px;
+/* Filled up to the thumb (--fill-fraction, from sliders.js). */
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
   border-radius: 999px;
   background:
     linear-gradient(90deg, var(--slider-start), var(--slider-end)) 0 0 /
       calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * var(--fill-fraction, 0)) 100% no-repeat,
-    var(--color-track);
+    var(--track);
 }
 
-.preference-slider::-webkit-slider-thumb {
+.slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: var(--thumb-size);
   height: var(--thumb-size);
-  margin-top: calc((10px - var(--thumb-size)) / 2);
-  border: 3px solid #ffffff;
+  margin-top: calc((6px - var(--thumb-size)) / 2);
+  border: 2px solid var(--thumb-border);
   border-radius: 50%;
-  background: var(--slider-end);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+  background: var(--thumb);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s ease;
 }
 
-.preference-slider:focus-visible {
+.slider:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.slider:focus-visible {
   outline: none;
 }
 
-.preference-slider:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 0 0 5px var(--color-focus);
+.slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px var(--focus);
 }
 
-/* A picked date between stops: the native thumb can only sit on a stop, so
-   it's made invisible (still draggable) and .deadline-slider-custom-thumb is
-   drawn at the date's true position instead; the fill runs to it too. */
-.preference-slider--custom::-webkit-slider-thumb {
-  opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .slider::-webkit-slider-thumb { transition: none; }
 }
 
-.deadline-slider-custom-thumb {
-  --marker-position: 0;
-  position: absolute;
-  left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * var(--marker-position));
-  width: var(--thumb-size);
-  height: var(--thumb-size);
-  margin-top: calc(var(--thumb-size) * -1);
-  transform: translateX(-50%);
-  border: 3px solid #ffffff;
-  border-radius: 50%;
-  background: var(--slider-end);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
-  pointer-events: none;
+/* Date: the season's main color */
+.slider--deadline {
+  --slider-start: var(--season-blob-1);
+  --slider-end: var(--season-blob-1);
 }
 
-/* Holiday markers and stop labels are positioned along the track. The
-   thumb-size/2 inset lines 0 and 1 up with the thumb's centre at each end. */
-.deadline-slider {
+/* Savings: copper at the start, the blended metal at the thumb */
+.slider--savings {
+  --slider-start: var(--coin-track-start);
+  --slider-end: var(--coin-accent);
+}
+
+.slider-control--savings {
+  --coin-accent: color-mix(in oklab, var(--coin-from-1), var(--coin-to-1) var(--coin-mix));
+  transition: --coin-accent var(--color-transition-duration);
+}
+
+.slider-ticks {
   position: relative;
+  height: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
-.deadline-slider-markers {
-  position: relative;
-  height: 30px;
-  margin-top: 6px;
-}
-
-.deadline-slider-marker {
-  --marker-position: 0;
+.slider-tick {
   position: absolute;
-  bottom: 0;
-  left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * var(--marker-position));
-  transform: translateX(-50%);
-  padding: 0 2px;
-  border: none;
-  background: none;
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-/* A thin tick from each marker down to the track, in the season's color. */
-.deadline-slider-marker::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  height: 6px;
-  border-left: 2px solid var(--season-accent);
-}
-
-/* Markers close together (e.g. Christmas and New Year) alternate heights. */
-.deadline-slider-marker--raised {
-  bottom: 14px;
-}
-
-.deadline-slider-marker--raised::after {
-  height: 20px;
-}
-
-.deadline-slider-stops {
-  position: relative;
-  height: 18px;
-  margin-top: 4px;
-}
-
-.deadline-slider-stop {
-  position: absolute;
-  transform: translateX(-50%);
-  font-size: 12px;
-  color: var(--color-muted);
   white-space: nowrap;
 }
 
-.deadline-slider-stop:nth-child(1) { left: calc(var(--thumb-size) / 2); }
-.deadline-slider-stop:nth-child(2) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.2); }
-.deadline-slider-stop:nth-child(3) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.4); }
-.deadline-slider-stop:nth-child(4) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.6); }
-.deadline-slider-stop:nth-child(5) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.8); }
-.deadline-slider-stop:nth-child(6) { left: calc(100% - var(--thumb-size) / 2); }
+/* Deadline ticks at their real day on the 1–90 day track:
+   (day − 1) / 89 → 1 day 0, 2 wks 0.146, 1 mo 0.326, 2 mo 0.663, 3 mo 1. */
+.slider-ticks--deadline .slider-tick { transform: translateX(-50%); }
+.slider-ticks--deadline .slider-tick:nth-child(1) { left: 0; transform: none; }
+.slider-ticks--deadline .slider-tick:nth-child(2) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.1461); }
+.slider-ticks--deadline .slider-tick:nth-child(3) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.3258); }
+.slider-ticks--deadline .slider-tick:nth-child(4) { left: calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * 0.6629); }
+.slider-ticks--deadline .slider-tick:nth-child(5) { right: 0; transform: none; }
 
-.deadline-custom {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.deadline-date-input {
-  font: inherit;
-  font-size: 14px;
-}
+.slider-ticks--savings .slider-tick:nth-child(1) { left: 0; }
+.slider-ticks--savings .slider-tick:nth-child(2) { right: 0; }
 
 /* ==========================================================================
-   5. Buy now / Wait & watch
+   5. The context button
    ========================================================================== */
 
-.recommendation-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.action-button {
-  flex: 1;
+.primary-button {
+  width: 100%;
   min-height: 48px;
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  font: inherit;
-  font-size: clamp(15px, 4.6vw, 17px); /* keeps "Wait & watch" on one line at 320px */
+  padding: 14px 16px;
+  border: none;
+  border-radius: 16px;
+  font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  background: var(--color-background);
-  color: var(--color-text);
+  box-shadow: 0 2px 6px rgb(15 23 42 / 0.2);
+  transition: background-color 0.2s, transform 0.1s;
 }
 
-.action-button:disabled {
+.primary-button:active {
+  transform: scale(0.98);
+}
+
+.primary-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.action-button--buy {
-  border-color: var(--button-buy-background);
+.primary-button--watch {
+  background: var(--button-watch-background);
+  color: var(--button-watch-text);
+}
+
+.primary-button--watch:not(:disabled):hover {
+  background: var(--button-watch-hover);
+}
+
+.primary-button--watching {
+  background: var(--button-watching-background);
+  color: var(--button-watching-text);
+}
+
+.primary-button--buy {
   background: var(--button-buy-background);
   color: var(--button-buy-text);
 }
 
-.action-button--watch:not(:disabled):hover {
-  background: var(--color-surface);
+.primary-button--buy:not(:disabled):hover {
+  background: var(--button-buy-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-button { transition: none; }
+  .primary-button:active { transform: none; }
 }
 
 .watch-confirmation {
-  margin: 10px 2px 0;
-  font-size: 15px;
-  color: var(--color-success);
+  margin: -6px 4px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--success);
 }
 
 .watch-confirmation--error {
-  color: var(--color-error);
+  color: var(--error);
 }
 
 /* ==========================================================================
-   6. Trust row and "Why?"
+   6. Chips and "why?"
    ========================================================================== */
 
-.trust-row {
+.chips-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .chip {
@@ -696,62 +871,40 @@ body::before {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--chip-border);
   border-radius: 999px;
-  font-size: 14px;
-  color: var(--color-text);
-  background: var(--color-background);
+  background: var(--chip-background);
+  font-size: 12px;
+  color: var(--text);
 }
 
-/* A colored dot next to the confidence word (the word carries the meaning). */
 .chip--confidence::before {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--color-muted);
+  background: var(--text-muted);
 }
 
 .chip--confidence-high::before { background: var(--confidence-high); }
 .chip--confidence-medium::before { background: var(--confidence-medium); }
 .chip--confidence-low::before { background: var(--confidence-low); }
 
-.chip--source {
-  border-style: dashed;
-  color: var(--color-muted);
-}
-
 .why-toggle {
   margin-left: auto;
-  padding: 4px 6px;
+  padding: 4px 2px;
   border: none;
   background: none;
-  font: inherit;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--color-info);
+  color: var(--link);
+  text-decoration: underline;
   cursor: pointer;
 }
 
-.why-toggle::after {
-  content: "▸";
-  display: inline-block;
-  margin-left: 4px;
-  transition: transform 0.15s;
-}
-
-.why-toggle[aria-expanded="true"]::after {
-  transform: rotate(90deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .why-toggle::after { transition: none; }
-}
-
 .why-panel {
+  margin-top: -6px;
   padding: 14px 16px;
-  border-radius: 12px;
-  background: rgb(246 248 250 / 0.85);
 }
 
 .why-panel-explanation {
@@ -767,12 +920,12 @@ body::before {
   justify-content: space-between;
   gap: 12px;
   padding: 6px 0;
-  border-top: 1px solid var(--color-border);
-  font-size: 14px;
+  border-top: 1px solid var(--divider);
+  font-size: 13px;
 }
 
 .why-panel-fact-label {
-  color: var(--color-muted);
+  color: var(--text-muted);
 }
 
 .why-panel-fact-value {
@@ -782,27 +935,73 @@ body::before {
 }
 
 /* ==========================================================================
-   7. Likely price range bar
+   7. Details: price range and watch list
    ========================================================================== */
 
-.price-range-title {
-  margin: 0;
-  font-size: 15px;
-  color: var(--color-muted);
+.details-card {
+  padding: 14px 16px;
 }
 
-.price-range-values {
-  color: var(--color-text);
-  white-space: nowrap;
+.details-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-/* --band-start, --band-end and --today are fractions (0–1) set by render.js. */
+.details-toggle-arrow {
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+
+.details-toggle[aria-expanded="true"] .details-toggle-arrow {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .details-toggle-arrow { transition: none; }
+}
+
+.details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+  font-size: 13px;
+}
+
+.price-range-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.price-range-header {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.price-range-today-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* --band-start, --band-end, --today and --predicted are fractions (0–1)
+   that render.js sets on .price-range, for the bar and the labels below. */
 .price-range-bar {
   position: relative;
-  height: 10px;
-  margin: 16px 0 8px;
+  height: 8px;
+  margin: 10px 0 6px;
   border-radius: 999px;
-  background: var(--color-track);
+  background: var(--range-track);
 }
 
 .price-range-band {
@@ -817,8 +1016,8 @@ body::before {
 
 .price-range-today {
   position: absolute;
-  top: -6px;
-  bottom: -6px;
+  top: -4px;
+  bottom: -4px;
   left: calc(var(--today, 1) * 100%);
   width: 4px;
   transform: translateX(-50%);
@@ -826,35 +1025,69 @@ body::before {
   background: var(--range-today);
 }
 
+/* Most likely lowest price: a diamond on the bar, and the same shape in
+   the legend line, so it never relies on color alone. */
+.price-range-predicted,
+.price-range-predicted-key {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--glass-border);
+  background: var(--range-predicted);
+  transform: rotate(45deg);
+}
+
+.price-range-predicted {
+  position: absolute;
+  top: -2px;
+  left: calc(var(--predicted, 0) * 100% - 5.5px);
+}
+
+.price-range-predicted-key {
+  flex: none;
+  border-color: transparent;
+}
+
+/* The band's low end is labelled under its start, the high end under its
+   end (right-aligned to it), so neither is mistaken for today's price. */
 .price-range-scale {
+  position: relative;
+  height: 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.price-range-scale > span {
+  position: absolute;
+  white-space: nowrap;
+}
+
+#price-range-low {
+  left: calc(var(--band-start, 0) * 100%);
+}
+
+#best-price-range {
+  left: calc(var(--band-end, 1) * 100%);
+  transform: translateX(-100%);
+}
+
+.price-range-predicted-label {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--color-muted);
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-.price-range-scale-today {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-/* ==========================================================================
-   8. Watching list
-   ========================================================================== */
-
-.watchlist {
-  margin: 0 12px 16px;
-  padding: 14px 18px 6px;
+.price-range-predicted-label strong {
+  color: var(--text);
 }
 
 .watchlist-title {
-  margin: 0 0 8px;
-  font-size: 13px;
+  margin: 0 0 6px;
+  font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-muted);
+  color: var(--text-muted);
 }
 
 .watchlist-items {
@@ -868,8 +1101,8 @@ body::before {
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 0;
-  border-top: 1px solid var(--color-border);
+  padding: 8px 0;
+  border-top: 1px solid var(--divider);
 }
 
 .watchlist-item-info {
@@ -882,7 +1115,7 @@ body::before {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--text);
   text-decoration: none;
 }
 
@@ -890,15 +1123,17 @@ body::before {
   text-decoration: underline;
 }
 
-.watchlist-item-target,
-.watchlist-item-status {
+.watchlist-item-target {
   margin: 2px 0 0;
-  font-size: 14px;
-  color: var(--color-muted);
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .watchlist-item-status {
-  color: var(--color-success);
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success);
 }
 
 .watchlist-item-remove {
@@ -906,18 +1141,18 @@ body::before {
 }
 
 /* ==========================================================================
-   9. Dev tools
+   8. Dev tools
    ========================================================================== */
 
 .dev-panel {
-  margin: auto 12px 16px; /* auto top margin pushes it to the panel's bottom */
-  padding: 12px 14px;
-  font-size: 13px;
+  margin: auto 16px 16px; /* auto top margin pushes it to the panel's bottom */
+  padding: 10px 14px;
+  font-size: 12px;
 }
 
 .dev-panel-summary {
   cursor: pointer;
-  color: var(--color-muted);
+  color: var(--text-muted);
 }
 
 .dev-panel-toggle {
@@ -930,7 +1165,7 @@ body::before {
 
 .dev-panel-hint {
   margin: 4px 0 0;
-  color: var(--color-muted);
+  color: var(--text-muted);
 }
 
 .dev-panel-field {
@@ -943,13 +1178,14 @@ body::before {
 
 .dev-panel-select {
   max-width: 60%;
-  font-size: 13px;
+  font-size: 12px;
+  color: #1e293b;
 }
 
 .dev-panel-group {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px dashed var(--color-border);
+  border-top: 1px dashed var(--divider);
 }
 
 .dev-panel-buttons {
@@ -960,10 +1196,11 @@ body::before {
 
 .dev-panel-button {
   flex: 1;
-  font-size: 12px;
+  font-size: 11px;
+  color: #1e293b;
 }
 
 .dev-panel-status {
   margin: 8px 0 0;
-  color: var(--color-muted);
+  color: var(--text-muted);
 }

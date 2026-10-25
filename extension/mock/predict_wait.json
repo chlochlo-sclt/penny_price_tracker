@@ -5,6 +5,8 @@
   "expected_drop_usd": 21.6,
   "interval_low_usd": 94.99,
   "interval_high_usd": 104.99,
+  "history_status": "ready",
+  "predicted_low_usd": 98.49,
   "confidence": "high",
   "best_day": "2026-11-27",
   "explanation": "This item has dropped 15–20% during each of the last three Black Friday sales. Waiting about five weeks will very likely save you money.",

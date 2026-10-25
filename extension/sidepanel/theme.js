@@ -1,15 +1,20 @@
 // Seasonal and coin colors: the season of the deadline date sets the whole
-// panel's palette (mesh background, date slider, accents), and the savings
-// slider shifts copper → silver → gold as the goal grows.
+// panel's palette (mesh background blobs, base color, date slider fill), and
+// the savings slider shifts copper → silver → gold as the goal grows.
 //
-// No colors live here. Each palette is a pair of CSS custom properties in
-// sidepanel.css (e.g. --season-halloween-1 / --season-halloween-2,
-// --coin-gold-1 / --coin-gold-2). This file only decides WHICH two palettes
-// to blend and HOW FAR, and sets:
-//   --<prefix>-from-1/-2, --<prefix>-to-1/-2   var() references to two palettes
-//   --<prefix>-mix                             0%–100% of the way from → to
-// sidepanel.css mixes them with color-mix() into --season-accent /
-// --coin-accent, which are registered with @property so they animate.
+// No colors live here. Each season is a set of CSS custom properties in
+// sidepanel.css: --season-<name>-1/-2/-3 (the three blobs) and
+// --season-<name>-base (the light background), and each coin is
+// --coin-<name>-1/-2. This file only decides WHICH two palettes to blend and
+// HOW FAR, and sets on the element:
+//   --<prefix>-from-<n>, --<prefix>-to-<n>   var() references to two palettes
+//   --<prefix>-mix                           0%–100% of the way from → to
+// sidepanel.css mixes them with color-mix(); the results are registered with
+// @property, so they animate.
+//
+// December is dark (data-theme="dark" on <html>). That switch is discrete,
+// not blended: a half-dark background would leave text on mid-gray, which
+// has poor contrast in both themes.
 const SliderTheme = (() => {
   // Anchor dates, in calendar order. Between two anchors the colors blend
   // linearly; two anchors with the same palette hold it steady between them.
@@ -33,6 +38,11 @@ const SliderTheme = (() => {
     { month: 12, day: 26, palette: "christmas" },
     { month: 12, day: 30, palette: "new-year" },
   ];
+
+  const SEASON_COLORS = ["1", "2", "3", "base"];
+
+  /** Dark, high-contrast theme for deadlines in December. */
+  const isDarkSeason = (date) => date.getMonth() === 11;
 
   // Savings slider stops, by percent.
   const COIN_STOPS = [
@@ -72,8 +82,8 @@ const SliderTheme = (() => {
   const coinFor = (savingsPct) => between(COIN_STOPS, savingsPct);
 
   /** Points the element's --<prefix>-from/to/mix properties at a blend. */
-  function apply(el, prefix, { from, to, t }) {
-    for (const n of [1, 2]) {
+  function apply(el, prefix, { from, to, t }, colors) {
+    for (const n of colors) {
       el.style.setProperty(`--${prefix}-from-${n}`, `var(--${prefix}-${from}-${n})`);
       el.style.setProperty(`--${prefix}-to-${n}`, `var(--${prefix}-${to}-${n})`);
     }
@@ -82,7 +92,10 @@ const SliderTheme = (() => {
   }
 
   return {
-    applySeason: (el, date) => apply(el, "season", seasonFor(date)),
-    applyCoin: (el, savingsPct) => apply(el, "coin", coinFor(savingsPct)),
+    applySeason(el, date) {
+      apply(el, "season", seasonFor(date), SEASON_COLORS);
+      el.dataset.theme = isDarkSeason(date) ? "dark" : "light";
+    },
+    applyCoin: (el, savingsPct) => apply(el, "coin", coinFor(savingsPct), ["1", "2"]),
   };
 })();
