@@ -341,6 +341,16 @@ def ensure_history(product_id, current_price, path=None, min_days=MIN_DAYS):
     save_observations(df.to_dict("records"), path)
 
 
+def has_real_history(product_id, path=None):
+    """True if we hold ANY non-simulated row for this product.
+
+    This is the "have we already fetched it?" test. Span is not usable for that:
+    a product whose whole Keepa history is 40 days is fully fetched but would
+    never reach MIN_REAL_DAYS, so a span-based check would re-fetch it forever.
+    """
+    return any(r["source"] != "simulated" for r in _product_rows(product_id, path))
+
+
 def real_span_days(product_id, path=None):
     """Days covered by this product's non-simulated history (0 if none)."""
     real = [r["timestamp"] for r in _product_rows(product_id, path) if r["source"] != "simulated"]

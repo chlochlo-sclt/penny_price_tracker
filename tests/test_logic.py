@@ -267,6 +267,9 @@ def test_backtest_has_no_lookahead():
 
 
 # ---- live fetch ----
+import time  # noqa: E402  (used by the concurrency test)
+
+
 def _live(real_days=0, worker=None, token="x", live="1"):
     """Context-free helper: patch live_fetch for one test, return an undo function.
 
@@ -276,12 +279,13 @@ def _live(real_days=0, worker=None, token="x", live="1"):
     import os
     from app import live_fetch as lf
     saved = (lf.real_span_days, lf.worker, os.environ.get("APIFY_API_TOKEN"),
-             dict(lf._state), os.environ.get("LIVE_FETCH"))
+             dict(lf._state), os.environ.get("LIVE_FETCH"), lf.has_real_history)
     if live is None:
         os.environ.pop("LIVE_FETCH", None)
     else:
         os.environ["LIVE_FETCH"] = live
     lf.real_span_days = lambda pid, path=None: real_days
+    lf.has_real_history = lambda pid, path=None: real_days > 0
     lf.worker = worker or (lambda asin: None)
     if token:
         os.environ["APIFY_API_TOKEN"] = token
@@ -300,6 +304,7 @@ def _live(real_days=0, worker=None, token="x", live="1"):
             os.environ.pop("LIVE_FETCH", None)
         else:
             os.environ["LIVE_FETCH"] = saved[4]
+        lf.has_real_history = saved[5]
     return lf, undo
 
 
@@ -537,3 +542,64 @@ def test_price_checks_can_be_switched_off(monkeypatch):
         pass
     else:
         raise AssertionError("should refuse when price checks are off")
+
+
+def test_thin_history_product_is_fetched_only_once():
+    """Keepa may hold < MIN_REAL_DAYS for a product. Fetching it must not repeat:
+    otherwise every slider drag spends another Keepa run."""
+    calls = []
+    lf, undo = _live(real_days=20, worker=lambda asin: calls.append(asin))
+    try:
+        from app import live_fetch
+        live_fetch.has_real_history = lambda pid, path=None: False
+        assert lf.ensure_real_history("B0THINASIN", background=False) == "ready"
+        # now the rows exist but still span < MIN_REAL_DAYS
+        live_fetch.has_real_history = lambda pid, path=None: True
+        lf.ensure_real_history("B0THINASIN", background=False)
+        lf.ensure_real_history("B0THINASIN", background=False)
+        assert calls == ["B0THINASIN"], f"fetched {len(calls)} times, must be 1"
+    finally:
+        undo()
+
+
+def test_concurrent_requests_start_only_one_fetch():
+    """A burst of /predict calls (panel re-asking, slider drags) is one run."""
+    import threading
+    calls = []
+    started = threading.Barrier(4)
+
+    def slow(asin):
+        calls.append(asin)
+        time.sleep(0.2)
+
+    lf, undo = _live(worker=slow)
+    try:
+        from app import live_fetch
+        live_fetch.has_real_history = lambda pid, path=None: False
+
+        def go():
+            started.wait()
+            lf.ensure_real_history("B0RACEASIN")
+        threads = [threading.Thread(target=go) for _ in range(4)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        time.sleep(0.5)
+        assert len(calls) == 1, f"{len(calls)} concurrent fetches started, must be 1"
+    finally:
+        undo()
+
+
+def test_history_status_never_starts_a_fetch():
+    """The extension polls this endpoint; polling must cost nothing."""
+    calls = []
+    lf, undo = _live(worker=lambda asin: calls.append(asin))
+    try:
+        from app import live_fetch
+        live_fetch.has_real_history = lambda pid, path=None: False
+        lf.history_status("B0POLLASIN")
+        lf.history_status("B0POLLASIN")
+        assert calls == []
+    finally:
+        undo()

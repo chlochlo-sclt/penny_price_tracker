@@ -16,7 +16,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from app.history_store import MIN_REAL_DAYS, real_span_days
+from app.history_store import MIN_REAL_DAYS, has_real_history, real_span_days
 
 # The server process needs APIFY_API_TOKEN too, not just the CLI scripts.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -54,34 +54,58 @@ def _run(asin):
     try:
         worker(asin)
         with _lock:
-            _state.pop(asin, None)
+            # "done", not removed: Keepa may hold less than MIN_REAL_DAYS for this
+            # product, and forgetting we fetched it would start a new run on the
+            # very next request (every slider drag = another Keepa run).
+            _state[asin] = {"status": "done", "at": time.time(), "error": ""}
     except Exception as exc:     # network, quota, no data: record and move on
         with _lock:
             _state[asin] = {"status": "failed", "at": time.time(), "error": str(exc)[:200]}
 
 
-def history_status(product_id):
-    if real_span_days(product_id) >= MIN_REAL_DAYS:
+def _status_locked(product_id, stored_real, enough_real):
+    """Status from already-read storage facts. Caller holds _lock."""
+    if enough_real:
         return "ready"
-    with _lock:
-        s = _state.get(product_id)
+    s = _state.get(product_id)
     now = time.time()
-    if s and s["status"] == "fetching" and now - s["at"] < STALE_FETCH_SECONDS:
-        return "fetching"
-    if s and s["status"] == "failed" and now - s["at"] < COOLDOWN_SECONDS:
-        return "failed"
+    if s:
+        if s["status"] == "fetching" and now - s["at"] < STALE_FETCH_SECONDS:
+            return "fetching"
+        if s["status"] == "failed" and now - s["at"] < COOLDOWN_SECONDS:
+            return "failed"
+        if s["status"] == "done":
+            return "ready"          # fetched; this is all the history that exists
+    if stored_real:
+        return "ready"              # real rows already here (e.g. after a restart)
     return "unavailable" if not enabled() else "idle"
 
 
-def ensure_real_history(product_id, background=True):
-    """Return the history status, starting a background fetch if one is needed."""
-    status = history_status(product_id)
-    if status != "idle":
-        return status
-    if not ASIN_RE.match(product_id or ""):
-        return "unavailable"
+def history_status(product_id):
+    """Never starts a fetch. Safe for the extension to poll."""
+    stored_real = has_real_history(product_id)
+    enough_real = real_span_days(product_id) >= MIN_REAL_DAYS
     with _lock:
+        return _status_locked(product_id, stored_real, enough_real)
+
+
+def ensure_real_history(product_id, background=True):
+    """Return the history status, starting a background fetch only if one is needed.
+
+    The check and the claim happen under one lock, so a burst of requests (the
+    panel re-asking, or a slider drag sending several /predict calls) can only
+    ever start ONE Keepa run for a product.
+    """
+    stored_real = has_real_history(product_id)
+    enough_real = real_span_days(product_id) >= MIN_REAL_DAYS
+    with _lock:
+        status = _status_locked(product_id, stored_real, enough_real)
+        if status != "idle":
+            return status
+        if not ASIN_RE.match(product_id or ""):
+            return "unavailable"
         _state[product_id] = {"status": "fetching", "at": time.time(), "error": ""}
+
     if background:
         threading.Thread(target=_run, args=(product_id,), daemon=True).start()
     else:
