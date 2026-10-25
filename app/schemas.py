@@ -4,10 +4,11 @@ from pydantic import BaseModel, Field
 
 
 class Preferences(BaseModel):
-    risk_tolerance: Literal["cautious", "balanced", "bold"] = "balanced"
-    min_savings_pct: float = Field(default=5.0, ge=0)
-    deadline_days: int = Field(default=14, ge=1, le=90)
-    budget_usd: float | None = Field(default=None, ge=0)
+    min_savings_pct: float = Field(default=5.0, ge=1, le=50)       # how much cheaper they want
+    min_confidence_pct: float | None = Field(default=None, ge=50, le=95)   # how sure we must be
+    deadline_days: int = Field(default=14, ge=1, le=90)            # latest they will buy
+    # optional shortcut for min_confidence_pct: cautious=80, balanced=65, bold=50
+    risk_tolerance: Literal["cautious", "balanced", "bold"] | None = None
 
 
 class PredictRequest(BaseModel):
@@ -25,6 +26,7 @@ class PredictResponse(BaseModel):
     expected_drop_usd: float = Field(ge=0)
     interval_low_usd: float = Field(ge=0)
     interval_high_usd: float = Field(ge=0)
+    predicted_low_usd: float | None = Field(default=None, ge=0)   # median lowest price in the window
     confidence: Literal["low", "medium", "high"]
     best_day: str | None
     explanation: str

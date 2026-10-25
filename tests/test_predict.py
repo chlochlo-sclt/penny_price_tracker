@@ -32,6 +32,7 @@ def test_predict_response():
         "expected_drop_usd",
         "interval_low_usd",
         "interval_high_usd",
+        "predicted_low_usd",
         "confidence",
         "best_day",
         "explanation",
@@ -87,3 +88,23 @@ def test_cors_allows_extension_origin():
         },
     )
     assert response.headers["access-control-allow-origin"] == "chrome-extension://abcdefghijklmnop"
+
+
+def test_post_predict_accepts_savings_confidence_and_deadline(tmp_path, monkeypatch):
+    from app import history_store
+    monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
+
+    body = {"product_id": "B0TESTASIN2", "price": 120.0, "currency": "USD",
+            "preferences": {"min_savings_pct": 10, "min_confidence_pct": 60, "deadline_days": 35}}
+    data = client.post("/predict", json=body).json()
+
+    assert data["recommendation"] in ["buy_now", "wait"]
+    assert data["best_day"]                       # always present
+    assert data["predicted_low_usd"] <= 120.0
+    assert "60%" in data["explanation"]
+
+
+def test_post_predict_rejects_out_of_range_settings():
+    body = {"product_id": "B0TESTASIN2", "price": 120.0,
+            "preferences": {"min_confidence_pct": 20}}
+    assert client.post("/predict", json=body).status_code == 422

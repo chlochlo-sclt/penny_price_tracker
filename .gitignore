@@ -15,3 +15,5 @@ __pycache__/
 # Editors
 .vscode/
 .idea/
+data/raw/
+data/processed/

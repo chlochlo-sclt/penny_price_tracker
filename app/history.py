@@ -28,7 +28,7 @@ def simulate_history(product_id, anchor_price, end_date, days=365, seed=None):
         x = 0.97 * x + rng.normal(0, 0.004)
         level[i] = 1 + x
 
-    weekday_effect = 1 + rng.normal(0, 0.006, 7)[dates.dayofweek]
+    weekday_effect = 1 + rng.normal(0, 0.006, 7)[dates.day_of_week]
 
     discount = np.zeros(days)
     depth_cache = {}

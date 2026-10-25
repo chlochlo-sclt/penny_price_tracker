@@ -6,6 +6,7 @@
   "expected_drop_usd": 15.0,
   "interval_low_usd": 99.99,
   "interval_high_usd": 114.99,
+  "predicted_low_usd": 104.5,
   "confidence": "medium",
   "best_day": "2026-11-27",
   "explanation": "Prices for this item usually dip around Black Friday. There is a 72% chance the price drops about 12% within the next five weeks.",

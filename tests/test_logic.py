@@ -56,13 +56,57 @@ def test_forecast_with_thin_history_is_low_confidence(tmp_path):
     assert decide(fc, 50.0)["recommendation"] == "buy_now"
 
 
-def test_preferences_change_the_verdict():
-    fc = {"p_drop": 0.70, "expected_drop_pct": 10.0, "expected_drop_usd": 10.0,
-          "best_day": "2026-11-27", "history_days": 365, "enough_data": True}
-    assert decide(fc, 100.0, {"risk_tolerance": "balanced"})["recommendation"] == "wait"
-    assert decide(fc, 100.0, {"risk_tolerance": "cautious"})["recommendation"] == "buy_now"
-    assert decide(fc, 100.0, {"min_savings_pct": 15})["recommendation"] == "buy_now"
-    assert decide(fc, 100.0, {"budget_usd": 120})["recommendation"] == "buy_now"
+def _fc(p_drop=0.70, likely_low_day="2026-11-27"):
+    return {"p_drop": p_drop, "expected_drop_pct": 10.0, "expected_drop_usd": 10.0,
+            "interval_low_usd": 88.0, "interval_high_usd": 100.0, "predicted_low_usd": 92.0,
+            "today": "2026-10-24", "likely_low_day": likely_low_day,
+            "history_days": 365, "enough_data": True}
+
+
+def test_confidence_level_changes_the_verdict():
+    base = {"min_savings_pct": 10, "deadline_days": 35}
+    wait = decide(_fc(0.70), 100.0, {**base, "min_confidence_pct": 65})
+    assert wait["recommendation"] == "wait" and wait["best_day"] == "2026-11-27"
+    assert "70%" in wait["explanation"] and "65%" in wait["explanation"]
+    buy = decide(_fc(0.70), 100.0, {**base, "min_confidence_pct": 85})
+    assert buy["recommendation"] == "buy_now" and buy["best_day"] == "2026-10-24"   # best day is always set
+    assert "85%" in buy["explanation"]
+
+
+def test_risk_presets_are_shortcuts_for_the_confidence_number():
+    from app.decision import resolve_preferences
+    assert resolve_preferences({"risk_tolerance": "cautious"})["min_confidence_pct"] == 80
+    assert resolve_preferences({"risk_tolerance": "bold"})["min_confidence_pct"] == 50
+    # an explicit number wins over the preset
+    assert resolve_preferences({"risk_tolerance": "bold", "min_confidence_pct": 90})["min_confidence_pct"] == 90
+    assert resolve_preferences(None)["min_confidence_pct"] == 65
+
+
+def test_there_is_no_budget_setting():
+    from app.decision import resolve_preferences
+    assert "budget_usd" not in resolve_preferences({"budget_usd": 50})
+
+
+def test_wait_verdict_without_a_known_low_day_still_gives_a_best_day():
+    d = decide(_fc(0.9, likely_low_day=None), 100.0, {"min_confidence_pct": 65})
+    assert d["recommendation"] == "wait" and d["best_day"] == "2026-10-24"
+
+
+def test_forecast_reports_predicted_low_and_likely_day(tmp_path):
+    path = tmp_path / "h.json"
+    ensure_history("P", 200.0, path)
+    fc = forecast(get_history("P", path), 200.0, 35, 0.05, today="2026-10-24")
+    assert fc["interval_low_usd"] <= fc["predicted_low_usd"] <= fc["interval_high_usd"] <= 200.0
+    if fc["likely_low_day"]:
+        assert "2026-10-24" < fc["likely_low_day"] <= "2026-11-28"      # inside the 35-day deadline
+
+
+def test_a_price_that_never_changes_gets_no_wait_verdict():
+    flat = pd.DataFrame({"timestamp": pd.date_range("2023-01-01", "2026-10-23", freq="D").strftime("%Y-%m-%dT00:00:00Z"),
+                         "price": 12.0, "source": "historical"})
+    fc = forecast(flat, 12.0, 35, 0.05, today="2026-10-24")
+    d = decide(fc, 12.0, {"deadline_days": 35})
+    assert fc["p_drop"] == 0 and d["recommendation"] == "buy_now" and d["best_day"] == "2026-10-24"
 
 
 def test_asin_is_read_from_the_url_and_marked_scraped():
@@ -174,3 +218,36 @@ def test_an_explicit_path_always_uses_json_even_with_a_database_url(tmp_path, mo
 def test_database_rows_have_the_shape_the_store_expects():
     rows = history_store._db_rows([_row("H", "2026-10-24T10:00:00Z", 12.5)])
     assert rows == [("H", "2026-10-24T10:00:00Z", 12.5, "USD", "scraped", None, None)]
+
+
+# ---- backtest ----
+def _sim(days=800):
+    from app.history import simulate_history
+    h = simulate_history("SIMBT", 150.0, "2026-10-23", days=days)
+    h["source"] = "simulated"
+    return h
+
+
+def test_backtest_basic_shape():
+    from app.backtest import backtest
+    r = backtest(_sim(), deadline_days=14, savings_pct=5.0)
+    s = r["summary"]
+    assert s["n"] > 50
+    assert all(0.0 <= row["p_drop"] <= 1.0 for row in r["rows"])
+    assert 0.0 <= s["brier"] <= 1.0
+
+
+def test_backtest_has_no_lookahead():
+    """Changing prices after a cutoff must not change predictions made before it."""
+    import pandas as pd
+    from app.backtest import backtest
+    h = _sim()
+    a = backtest(h, 14, 5.0)["rows"]
+    cutoff = pd.to_datetime(a[len(a) // 2]["date"])
+    h2 = h.copy()
+    ts = pd.to_datetime(h2["timestamp"], utc=True).dt.tz_localize(None)
+    h2.loc[ts > cutoff + pd.Timedelta(days=14), "price"] *= 0.5
+    b = backtest(h2, 14, 5.0)["rows"]
+    early_a = [r["p_drop"] for r in a if pd.to_datetime(r["date"]) <= cutoff]
+    early_b = [r["p_drop"] for r in b if pd.to_datetime(r["date"]) <= cutoff]
+    assert early_a == early_b

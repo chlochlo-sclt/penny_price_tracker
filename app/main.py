@@ -105,6 +105,7 @@ def predict_for_product(req: PredictRequest):
         expected_drop_usd=fc["expected_drop_usd"],
         interval_low_usd=fc["interval_low_usd"],
         interval_high_usd=fc["interval_high_usd"],
+        predicted_low_usd=fc["predicted_low_usd"],
         confidence=fc["confidence"],
         best_day=verdict["best_day"],
         explanation=verdict["explanation"],
