@@ -1,6 +1,6 @@
 # penny
 
-penny is a Chrome extension (always written lowercase) that tells shoppers on Amazon product pages whether to **buy now** or **wait**, based on a price-drop forecast from the Python backend in `app/`.
+penny is a Chrome extension that tells shoppers on Amazon product pages whether to **buy now** or **wait**, based on a price-drop forecast from the Python backend in `app/`.
 
 ## Running it
 
