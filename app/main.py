@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.decision import decide, resolve_preferences
 from app.forecast import forecast, history_source
 from app.history_store import ensure_history, get_history
+from app.live_fetch import ensure_real_history, history_status
 from app.schemas import PredictRequest, PredictResponse
 
 app = FastAPI(
@@ -80,6 +81,9 @@ def predict_for_product(req: PredictRequest):
         req.preferences.model_dump() if req.preferences else None
     )
 
+    # Starts a background Keepa fetch if we have no real history for this ASIN yet.
+    status = ensure_real_history(req.product_id)
+
     # Adds LABELED simulated history if this product has too little real history.
     ensure_history(req.product_id, req.price)
     history = get_history(req.product_id)
@@ -110,4 +114,12 @@ def predict_for_product(req: PredictRequest):
         best_day=verdict["best_day"],
         explanation=verdict["explanation"],
         data_source=history_source(history),
+        history_status=status,
     )
+
+
+@app.get("/history-status/{product_id}")
+def product_history_status(product_id: str):
+    """Lightweight poll for the extension while real history is being fetched."""
+    status = history_status(product_id)
+    return {"product_id": product_id, "history_status": "unavailable" if status == "idle" else status}

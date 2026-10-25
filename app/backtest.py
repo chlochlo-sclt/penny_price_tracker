@@ -36,6 +36,11 @@ def backtest(history, deadline_days=14, savings_pct=5.0, step=3, min_train_days=
 
     first_test = s.index[0] + pd.Timedelta(days=min_train_days)
     last_test = s.index[-1] - pd.Timedelta(days=deadline_days)
+    # outcome of every possible start day, so we can say what the plain drop rate
+    # "so far" was on each test day (only outcomes already known by then)
+    n_all = len(prices) - deadline_days
+    ev_all = np.array([prices[i + 1:i + 1 + deadline_days].min() / prices[i] - 1 <= -threshold
+                       for i in range(max(n_all, 0))], dtype=float)
     rows = []
     for t in pd.date_range(first_test, last_test, freq=f"{step}D"):
         past = history[(ts <= t).to_numpy()]               # only what was known on day t
@@ -45,7 +50,9 @@ def backtest(history, deadline_days=14, savings_pct=5.0, step=3, min_train_days=
             continue
         i = s.index.get_loc(t)
         future_min = prices[i + 1:i + 1 + deadline_days].min()
+        known = ev_all[:max(i - deadline_days + 1, 0)]
         rows.append({"date": t.date().isoformat(), "p_drop": fc["p_drop"],
+                     "base": float(known.mean()) if len(known) else float(ev_all.mean()),
                      "dropped": bool(future_min / price - 1 <= -threshold),
                      "price": round(price, 2), "future_min": round(float(future_min), 2)})
 
@@ -62,8 +69,10 @@ def backtest(history, deadline_days=14, savings_pct=5.0, step=3, min_train_days=
         "actual_drop_rate": round(base, 3),
         "mean_predicted": round(float(p.mean()), 3),
         "brier": round(float(((p - y) ** 2).mean()), 4),
-        # best constant guess (always say the overall rate): the bar to beat
-        "brier_constant_guess": round(float(((base - y) ** 2).mean()), 4),
+        # the bar to beat: always guess the plain drop rate seen so far (no hindsight)
+        "brier_constant_guess": round(float(((np.array([r["base"] for r in rows]) - y) ** 2).mean()), 4),
+        # same, but using the whole test period's rate (needs hindsight; shown for reference)
+        "brier_hindsight_constant": round(float(((base - y) ** 2).mean()), 4),
         "first_test_day": rows[0]["date"], "last_test_day": rows[-1]["date"],
         "data_source": history_source(history),
     }
@@ -93,7 +102,7 @@ def report(result):
         f"Backtest: {s['n']} test days ({s['first_test_day']} to {s['last_test_day']}), "
         f"{s['savings_pct']:g}% drop within {s['deadline_days']} days, data: {s['data_source']}",
         f"A drop really happened {s['actual_drop_rate']:.0%} of the time; we predicted {s['mean_predicted']:.0%} on average.",
-        f"Brier score {s['brier']} vs {s['brier_constant_guess']} for a constant guess "
+        f"Brier score {s['brier']} vs {s['brier_constant_guess']} for always guessing the drop rate seen so far "
         f"({skill:+.0%} {'better' if skill >= 0 else 'worse'}).",
         "", "When we predicted...   days   a drop actually happened",
     ]

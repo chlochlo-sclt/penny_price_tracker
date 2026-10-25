@@ -251,3 +251,94 @@ def test_backtest_has_no_lookahead():
     early_a = [r["p_drop"] for r in a if pd.to_datetime(r["date"]) <= cutoff]
     early_b = [r["p_drop"] for r in b if pd.to_datetime(r["date"]) <= cutoff]
     assert early_a == early_b
+
+
+# ---- live fetch ----
+def _live(real_days=0, worker=None, token="x"):
+    """Context-free helper: patch live_fetch for one test, return an undo function."""
+    import os
+    from app import live_fetch as lf
+    saved = (lf.real_span_days, lf.worker, os.environ.get("APIFY_API_TOKEN"), dict(lf._state))
+    lf.real_span_days = lambda pid, path=None: real_days
+    lf.worker = worker or (lambda asin: None)
+    if token:
+        os.environ["APIFY_API_TOKEN"] = token
+    else:
+        os.environ.pop("APIFY_API_TOKEN", None)
+    lf._state.clear()
+
+    def undo():
+        lf.real_span_days, lf.worker = saved[0], saved[1]
+        if saved[2] is None:
+            os.environ.pop("APIFY_API_TOKEN", None)
+        else:
+            os.environ["APIFY_API_TOKEN"] = saved[2]
+        lf._state.clear(); lf._state.update(saved[3])
+    return lf, undo
+
+
+def test_live_fetch_starts_when_no_real_history():
+    calls = []
+    lf, undo = _live(worker=lambda asin: calls.append(asin))
+    try:
+        lf.ensure_real_history("B0TESTASIN", background=False)
+        assert calls == ["B0TESTASIN"]
+    finally:
+        undo()
+
+
+def test_live_fetch_skipped_when_history_already_real():
+    calls = []
+    lf, undo = _live(real_days=400, worker=lambda asin: calls.append(asin))
+    try:
+        assert lf.ensure_real_history("B0TESTASIN", background=False) == "ready"
+        assert calls == []
+    finally:
+        undo()
+
+
+def test_live_fetch_failure_is_reported_and_not_retried_immediately():
+    calls = []
+
+    def boom(asin):
+        calls.append(asin)
+        raise RuntimeError("quota")
+    lf, undo = _live(worker=boom)
+    try:
+        assert lf.ensure_real_history("B0TESTASIN", background=False) == "failed"
+        assert lf.ensure_real_history("B0TESTASIN", background=False) == "failed"
+        assert len(calls) == 1          # cooldown: second call did not refetch
+    finally:
+        undo()
+
+
+def test_live_fetch_unavailable_without_token_or_for_non_asin():
+    lf, undo = _live(token=None)
+    try:
+        assert lf.ensure_real_history("B0TESTASIN", background=False) == "unavailable"
+    finally:
+        undo()
+    lf, undo = _live()
+    try:
+        assert lf.ensure_real_history("not an asin!", background=False) == "unavailable"
+    finally:
+        undo()
+
+
+def test_outlier_flicker_is_removed():
+    import pandas as pd
+    from app.forecast import clean_outliers, daily_series
+    ts = pd.date_range("2026-01-01", periods=120, freq="D").strftime("%Y-%m-%dT12:00:00Z")
+    prices = [260.0] * 120
+    prices[100] = 99.99
+    prices[119] = 99.99
+    h = pd.DataFrame({"timestamp": ts, "price": prices, "source": "historical"})
+    assert len(clean_outliers(h)) == 118
+    assert daily_series(h).min() == 260.0
+
+
+def test_confidence_is_capped_without_a_proven_signal():
+    from app.forecast import _confidence
+    assert _confidence(400, 40, has_proven_signal=True) == "high"
+    assert _confidence(400, 40, has_proven_signal=False) == "medium"
+    assert _confidence(30, 1, has_proven_signal=True) == "low"

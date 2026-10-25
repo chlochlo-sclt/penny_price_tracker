@@ -26,6 +26,7 @@ class PredictResponse(BaseModel):
     expected_drop_usd: float = Field(ge=0)
     interval_low_usd: float = Field(ge=0)
     interval_high_usd: float = Field(ge=0)
+    history_status: Literal["ready", "fetching", "failed", "unavailable"] = "ready"
     predicted_low_usd: float | None = Field(default=None, ge=0)   # median lowest price in the window
     confidence: Literal["low", "medium", "high"]
     best_day: str | None

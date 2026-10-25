@@ -37,6 +37,7 @@ def test_predict_response():
         "best_day",
         "explanation",
         "data_source",
+        "history_status",
     }
 
     assert set(data.keys()) == expected_fields
