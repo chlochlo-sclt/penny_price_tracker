@@ -47,13 +47,13 @@ def decide(fc, current_price, prefs=None):
 
     if chance >= need_pct:
         day = fc["likely_low_day"] or today
-        text = (f"Wait: there is a {chance}% chance the price falls at least {want_pct:g}% "
-                f"(to about ${target:,.2f} or lower) within {days} days, which meets your "
+        text = (f"Wait: in about {chance}% of comparable past {days}-day windows the price fell at least "
+                f"{want_pct:g}% (to about ${target:,.2f} or lower), which meets your "
                 f"{need_pct:g}% confidence level.")
         if fc["likely_low_day"]:
             text += f" The lowest price most often comes around {_date_text(day)}."
         return {"recommendation": "wait", "best_day": day, "explanation": text}
 
     return {"recommendation": "buy_now", "best_day": today,
-            "explanation": f"Buy now: there is only a {chance}% chance of a {want_pct:g}% drop "
-                           f"within {days} days, below your {need_pct:g}% confidence level."}
+            "explanation": f"Buy now: in only about {chance}% of comparable past {days}-day windows did the price "
+                           f"fall {want_pct:g}% or more, below your {need_pct:g}% confidence level."}

@@ -1,0 +1,57 @@
+{
+  "summary": {
+    "n": 431,
+    "deadline_days": 35,
+    "savings_pct": 10.0,
+    "actual_drop_rate": 0.288,
+    "mean_predicted": 0.391,
+    "brier": 0.2456,
+    "brier_constant_guess": 0.2049,
+    "first_test_day": "2023-03-08",
+    "last_test_day": "2026-09-18",
+    "data_source": "real"
+  },
+  "bins": [
+    {
+      "range": "0-20%",
+      "n": 55,
+      "mean_predicted": 0.164,
+      "actual_rate": 0.4
+    },
+    {
+      "range": "20-40%",
+      "n": 159,
+      "mean_predicted": 0.295,
+      "actual_rate": 0.264
+    },
+    {
+      "range": "40-60%",
+      "n": 182,
+      "mean_predicted": 0.495,
+      "actual_rate": 0.269
+    },
+    {
+      "range": "60-80%",
+      "n": 35,
+      "mean_predicted": 0.653,
+      "actual_rate": 0.314
+    }
+  ],
+  "wait_check": [
+    {
+      "confidence_pct": 50,
+      "n_wait": 123,
+      "hit_rate": 0.293
+    },
+    {
+      "confidence_pct": 65,
+      "n_wait": 12,
+      "hit_rate": 0.0
+    },
+    {
+      "confidence_pct": 80,
+      "n_wait": 0,
+      "hit_rate": null
+    }
+  ]
+}

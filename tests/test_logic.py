@@ -323,3 +323,22 @@ def test_live_fetch_unavailable_without_token_or_for_non_asin():
         assert lf.ensure_real_history("not an asin!", background=False) == "unavailable"
     finally:
         undo()
+
+
+def test_outlier_flicker_is_removed():
+    import pandas as pd
+    from app.forecast import clean_outliers, daily_series
+    ts = pd.date_range("2026-01-01", periods=120, freq="D").strftime("%Y-%m-%dT12:00:00Z")
+    prices = [260.0] * 120
+    prices[100] = 99.99
+    prices[119] = 99.99
+    h = pd.DataFrame({"timestamp": ts, "price": prices, "source": "historical"})
+    assert len(clean_outliers(h)) == 118
+    assert daily_series(h).min() == 260.0
+
+
+def test_confidence_is_capped_without_a_proven_signal():
+    from app.forecast import _confidence
+    assert _confidence(400, 40, has_proven_signal=True) == "high"
+    assert _confidence(400, 40, has_proven_signal=False) == "medium"
+    assert _confidence(30, 1, has_proven_signal=True) == "low"

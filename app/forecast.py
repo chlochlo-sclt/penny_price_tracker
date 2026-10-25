@@ -16,10 +16,34 @@ import numpy as np
 import pandas as pd
 
 
+OUTLIER_LOW, OUTLIER_HIGH = 0.55, 1.8     # vs the trailing 60-day median
+
+
+def clean_outliers(history: pd.DataFrame) -> pd.DataFrame:
+    """Drop bogus points such as a $99.99 third-party offer on a $260 item.
+
+    A point is dropped if it is below 55% or above 180% of the median of the 60 days
+    BEFORE it (trailing only, so it never looks ahead). Real price cuts that large
+    in one step are very rare on Amazon; flickers like this are common.
+    """
+    if len(history) < 5:
+        return history
+    ts = pd.to_datetime(history["timestamp"], utc=True, format="ISO8601").dt.tz_localize(None)
+    price = pd.Series(history["price"].to_numpy(dtype=float), index=ts.to_numpy())
+    order = np.argsort(ts.to_numpy(), kind="stable")
+    price = price.iloc[order]
+    ref = price.rolling("60D", closed="left").median()
+    ok = ref.isna() | ((price >= OUTLIER_LOW * ref) & (price <= OUTLIER_HIGH * ref))
+    keep = np.zeros(len(history), dtype=bool)
+    keep[order] = ok.to_numpy()
+    return history[keep]
+
+
 def daily_series(history: pd.DataFrame) -> pd.Series:
+    history = clean_outliers(history)
     ts = pd.to_datetime(history["timestamp"], utc=True, format="ISO8601").dt.tz_localize(None).dt.normalize()
     s = pd.Series(history["price"].to_numpy(dtype=float), index=ts).sort_index()
-    s = s.groupby(level=0).last()           # one price per day
+    s = s.groupby(level=0).median()         # one price per day (median resists flicker)
     return s.asfreq("D").ffill()            # fill gaps with the last known price
 
 
@@ -27,9 +51,12 @@ def _shrink(rate, n, prior, k=30):
     return (rate * n + prior * k) / (n + k)
 
 
-def _confidence(history_days, n_events):
+def _confidence(history_days, n_events, has_proven_signal=True):
+    """How much to trust the number. "high" needs a long history AND a signal
+    (seasonality or price position) that proved itself on this product's own past;
+    with only the plain historical rate, the best label is "medium"."""
     if history_days >= 270 and n_events >= 15:
-        return "high"
+        return "high" if has_proven_signal else "medium"
     if history_days >= 90 and n_events >= 5:
         return "medium"
     return "low"
@@ -40,6 +67,88 @@ def history_source(history: pd.DataFrame) -> str:
     if sources == {"simulated"}:
         return "simulated"
     return "mixed" if "simulated" in sources else "real"
+
+
+USE_STATE = True
+STATE_DAYS = 90
+
+
+def _state_earns_its_keep(ratio, event, horizon):
+    """Forward-only check on this product's own history: does a past day's price
+    position (vs its 90-day median) predict later drops better than the plain
+    rate known at that time? Uses only days that finished before each test day."""
+    n = len(event)
+    err_s = err_b = 0.0
+    count = 0
+    for i in range(120, n, 5):
+        known = i - horizon                       # outcomes finished by day i
+        if known < 90 or np.isnan(ratio[i]):
+            continue
+        base = float(event[:known].mean())
+        sim = ~np.isnan(ratio[:known]) & (np.abs(ratio[:known] - ratio[i]) <= 0.06)
+        if sim.sum() < 20:
+            continue
+        ps = _shrink(float(event[:known][sim].mean()), int(sim.sum()), base, k=40)
+        y = float(event[i])
+        err_s += (ps - y) ** 2
+        err_b += (base - y) ** 2
+        count += 1
+    return count >= 30 and err_b > 0 and (1 - err_s / err_b) >= SEASON_MIN_GAIN
+
+
+def _state_adjust(s, p, n, event, p_all, p_hat, price, horizon=14):
+    """Condition on where today's price sits versus its own recent level.
+
+    A price well above its 90-day median usually falls back; one already at its
+    low has little room. Past days with a similar position give a rate that is
+    blended (as an odds ratio vs the overall rate) into the seasonal estimate.
+    """
+    med = s.rolling(STATE_DAYS, min_periods=30).median().to_numpy()
+    ratio = p / med                                  # position of each past day
+    cur_med = float(np.median(p[-STATE_DAYS:]))
+    r_now = price / cur_med
+    if not _state_earns_its_keep(ratio[:n], event, horizon):
+        return p_hat, False
+    ok = ~np.isnan(ratio[:n])
+    for width in (0.03, 0.06, 0.10):
+        similar = ok & (np.abs(ratio[:n] - r_now) <= width)
+        if similar.sum() >= 40:
+            break
+    if similar.sum() < 15 or p_all <= 0 or p_all >= 1:
+        return p_hat, False
+    p_state = _shrink(float(event[similar].mean()), int(similar.sum()), p_all, k=40)
+    odds = lambda x: x / (1 - x)
+    mixed = odds(min(max(p_hat, 0.01), 0.99)) * odds(min(max(p_state, 0.01), 0.99)) / odds(min(max(p_all, 0.01), 0.99))
+    return float(mixed / (1 + mixed)), True
+
+
+SEASON_MIN_GAIN = 0.03     # seasonality must cut error by 3% to be used
+
+
+def _season_earns_its_keep(starts, event, p_all):
+    """Leave-one-year-out check on this product's own history: do same-time-of-year
+    windows from OTHER years predict a year's drops better than the plain rate?
+    Needs at least 2 years; otherwise seasonality is not trusted."""
+    doy = starts.day_of_year.to_numpy()
+    year = starts.year.to_numpy()
+    years = np.unique(year)
+    if len(years) < 2:
+        return False
+    err_s = err_b = 0.0
+    count = 0
+    for i in range(0, len(doy), 5):
+        other = year != year[i]
+        gap = np.abs(doy - doy[i])
+        near = other & (np.minimum(gap, 365 - gap) <= 21)
+        if near.sum() < 10 or other.sum() < 60:
+            continue
+        base = float(event[other].mean())
+        ps = _shrink(float(event[near].mean()), int(near.sum()), base)
+        y = float(event[i])
+        err_s += (ps - y) ** 2
+        err_b += (base - y) ** 2
+        count += 1
+    return count >= 30 and err_b > 0 and (1 - err_s / err_b) >= SEASON_MIN_GAIN
 
 
 def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today=None):
@@ -67,8 +176,11 @@ def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today
 
     gap = np.abs(starts.day_of_year.to_numpy() - today.day_of_year)
     near_season = np.minimum(gap, 365 - gap) <= 21     # same time of year, +/- 3 weeks
-    p_season = float(event[near_season].mean()) if near_season.any() else p_all
-    p_hat = _shrink(p_season, int(near_season.sum()), p_all)
+    use_season = _season_earns_its_keep(starts, event, p_all)
+    if use_season and near_season.any():
+        p_hat = _shrink(float(event[near_season].mean()), int(near_season.sum()), p_all)
+    else:
+        p_hat = p_all
 
     # Weekday only matters when the deadline is shorter than a week (a longer window
     # contains every weekday). Applied as a gentle multiplier, so it can never
@@ -78,6 +190,10 @@ def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today
         if same_dow.any() and p_all > 0:
             factor = _shrink(float(event[same_dow].mean()), int(same_dow.sum()), p_all) / p_all
             p_hat = min(max(p_hat * min(max(factor, 0.8), 1.25), 0.0), 1.0)
+
+    used_state = False
+    if USE_STATE:
+        p_hat, used_state = _state_adjust(s, p, n, event, p_all, p_hat, price, horizon_days)
 
     sizes = -drop[event]                               # drop sizes when a drop happened
     expected_drop = float(sizes.mean()) if len(sizes) else 0.0
@@ -107,7 +223,7 @@ def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today
         "interval_low_usd": round(low, 2),
         "interval_high_usd": round(high, 2),
         "predicted_low_usd": round(mid, 2),
-        "confidence": _confidence(len(s), int(event.sum())),
+        "confidence": _confidence(len(s), int(event.sum()), use_season or used_state),
         "today": today.date().isoformat(),
         "likely_low_day": likely_low_day,
         "history_days": int(len(s)),
