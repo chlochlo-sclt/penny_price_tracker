@@ -63,7 +63,9 @@ const WatchlistUI = (() => {
     const product = getProduct();
     if (!product) return;
     if (recommendation === "buy_now") {
-      scrollPageToBuyButton();
+      // Point the page at its own buy button, then get out of the way.
+      await scrollPageToBuyButton();
+      window.close(); // closes the side panel
       return;
     }
 
