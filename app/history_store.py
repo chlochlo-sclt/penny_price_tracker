@@ -13,13 +13,20 @@ Every function takes an optional `path`; passing one forces the JSON file
 import json
 import os
 import sys
+import threading
+import time
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
 
 from app.history import simulate_history
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# Every entry point (API, CLI tools, a bare python -c) must see TIGER_DATABASE_URL,
+# not just the scripts that happen to call load_dotenv themselves.
+load_dotenv(ROOT / ".env")
 HISTORY_PATH = ROOT / "data" / "processed" / "price_history.json"
 MIN_DAYS = 365
 MIN_REAL_DAYS = 60   # with this much real history we use it as is, no simulated filler
@@ -44,6 +51,8 @@ CREATE TABLE IF NOT EXISTS prices (
 )
 """
 HYPERTABLE_SQL = "SELECT create_hypertable('prices', 'ts', if_not_exists => TRUE)"
+# every read is "one product's whole history", so index that way
+INDEX_SQL = "CREATE INDEX IF NOT EXISTS prices_product_ts ON prices (product_id, ts)"
 INSERT_SQL = (
     "INSERT INTO prices (product_id, ts, price, currency, source, title, data_type) "
     "VALUES %s ON CONFLICT DO NOTHING"
@@ -52,6 +61,11 @@ SELECT_SQL = (
     "SELECT product_id, to_char(ts AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS timestamp, "
     "price::float8 AS price, currency, source, title, data_type "
     "FROM prices WHERE product_id = %s ORDER BY ts"
+)
+SELECT_ALL_SQL = (
+    "SELECT product_id, to_char(ts AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS timestamp, "
+    "price::float8 AS price, currency, source, title, data_type "
+    "FROM prices ORDER BY product_id, ts"
 )
 COUNT_SQL = "SELECT count(*) FROM prices"
 
@@ -62,9 +76,41 @@ def _db_url():
     return os.environ.get("TIGER_DATABASE_URL") or None
 
 
+_conn = None
+_conn_lock = threading.Lock()
+CONNECT_TIMEOUT = 3          # per address psycopg2 tries
+DB_COOLDOWN_SECONDS = 60     # after a failure, use the JSON file without retrying
+_db_down_until = 0.0
+_query_lock = threading.RLock()
+
+
 def _connect():
+    """One reusable connection per process.
+
+    A fresh SSL connection to a cloud Postgres costs a few hundred ms, and one
+    /predict needs several queries, so reconnecting each time made the API slow
+    enough for the extension to time out. Reconnects automatically if the link
+    has dropped.
+    """
+    global _conn
     import psycopg2
-    return psycopg2.connect(_db_url(), connect_timeout=5)
+    with _conn_lock:
+        if _conn is not None:
+            try:
+                if _conn.closed:
+                    _conn = None
+                else:
+                    with _conn.cursor() as cur:
+                        cur.execute("SELECT 1")
+                    return _conn
+            except Exception:
+                try:
+                    _conn.close()
+                except Exception:
+                    pass
+                _conn = None
+        _conn = psycopg2.connect(_db_url(), connect_timeout=CONNECT_TIMEOUT)
+        return _conn
 
 
 def _ensure_schema(conn):
@@ -79,8 +125,53 @@ def _ensure_schema(conn):
             cur.execute(HYPERTABLE_SQL)
         except Exception:                   # plain Postgres: a normal table is fine
             cur.execute("ROLLBACK TO SAVEPOINT hyper")
+        cur.execute(INDEX_SQL)
     conn.commit()
     _db_ready = True
+
+
+def _db_is_down():
+    """True while we're in the cooldown after a failed connection.
+
+    A hostname can resolve to many addresses and psycopg2 waits CONNECT_TIMEOUT
+    on each, so a down database made every request take half a minute before
+    falling back. After one failure we skip the database entirely for
+    DB_COOLDOWN_SECONDS and serve from the JSON file at once."""
+    return time.monotonic() < _db_down_until
+
+
+def _mark_db_down():
+    global _db_down_until
+    _db_down_until = time.monotonic() + DB_COOLDOWN_SECONDS
+
+
+def _query(fn):
+    """Run fn(conn) with the shared connection, holding the lock for the whole
+    query. FastAPI serves sync endpoints on a thread pool, and one psycopg2
+    connection must not be used by two threads at once. Serializing is fine at
+    our request rate and avoids a pool. On any error the connection is dropped
+    so the next call reconnects."""
+    with _query_lock:
+        conn = _connect()
+        try:
+            _ensure_schema(conn)
+            return fn(conn)
+        except Exception:
+            _drop_conn()
+            _mark_db_down()
+            raise
+
+
+def _drop_conn():
+    """Forget the shared connection so the next call makes a fresh one."""
+    global _conn
+    with _conn_lock:
+        if _conn is not None:
+            try:
+                _conn.close()
+            except Exception:
+                pass
+            _conn = None
 
 
 def _db_rows(rows):
@@ -91,9 +182,8 @@ def _db_rows(rows):
 def _db_save(new_rows):
     from psycopg2.extras import execute_values
     good = [r for r in new_rows if r.get("product_id") and r.get("price") is not None]
-    conn = _connect()
-    try:
-        _ensure_schema(conn)
+
+    def run(conn):
         with conn.cursor() as cur:
             cur.execute(COUNT_SQL)
             before = cur.fetchone()[0]
@@ -103,25 +193,31 @@ def _db_save(new_rows):
             after = cur.fetchone()[0]
         conn.commit()
         return after - before, after
-    finally:
-        conn.close()
+
+    return _query(run)
+
+
+def _fetch(sql, args=None):
+    def run(conn):
+        with conn.cursor() as cur:
+            cur.execute(sql, args)
+            names = [d[0] for d in cur.description]
+            return [dict(zip(names, row)) for row in cur.fetchall()]
+    return _query(run)
 
 
 def _db_load(product_id):
-    conn = _connect()
-    try:
-        _ensure_schema(conn)
-        with conn.cursor() as cur:
-            cur.execute(SELECT_SQL, (product_id,))
-            names = [d[0] for d in cur.description]
-            return [dict(zip(names, row)) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    return _fetch(SELECT_SQL, (product_id,))
+
+
+def _db_load_all():
+    return _fetch(SELECT_ALL_SQL)
 
 
 def _use_db(path):
-    """Tiger Data is used only when configured and no explicit file path is given."""
-    return path is None and _db_url() is not None
+    """Tiger Data is used only when configured, no explicit file path is given,
+    and we are not in the cooldown after a failed connection."""
+    return path is None and _db_url() is not None and not _db_is_down()
 
 
 def _warn_fallback(err):
@@ -132,12 +228,19 @@ def _warn_fallback(err):
 # ------------------------------------------------------------- public API
 
 def load_rows(path=None):
-    """All rows (every product) from the JSON file."""
+    """All rows for every product, from Tiger Data when configured, else the JSON file."""
+    if _use_db(path):
+        try:
+            return _db_load_all()
+        except Exception as err:
+            _warn_fallback(err)
     return _json_load(path)
 
 
 def save_observations(new_rows, path=None):
     """Append rows we haven't seen before. Returns (added, total)."""
+    for pid in {r.get("product_id") for r in new_rows}:
+        invalidate_cache(pid)
     if _use_db(path):
         try:
             return _db_save(new_rows)
@@ -146,13 +249,49 @@ def save_observations(new_rows, path=None):
     return _json_save(new_rows, path)
 
 
+CACHE_SECONDS = 30
+_cache = {}                      # product_id -> (fetched_at, rows)
+_cache_lock = threading.Lock()
+
+
+def _cache_get(product_id):
+    with _cache_lock:
+        hit = _cache.get(product_id)
+    if hit and time.monotonic() - hit[0] < CACHE_SECONDS:
+        return hit[1]
+    return None
+
+
+def _cache_put(product_id, rows):
+    with _cache_lock:
+        _cache[product_id] = (time.monotonic(), rows)
+
+
+def invalidate_cache(product_id=None):
+    """Drop cached rows after a write, so new history shows up immediately."""
+    with _cache_lock:
+        _cache.pop(product_id, None) if product_id else _cache.clear()
+
+
 def _product_rows(product_id, path=None):
+    """One product's rows. Cached briefly: a single /predict asks three times
+    (history status, ensure, load) and each uncached read is a round trip to a
+    remote database, which is most of the request's time."""
+    if path is None:
+        cached = _cache_get(product_id)
+        if cached is not None:
+            return cached
     if _use_db(path):
         try:
-            return _db_load(product_id)
+            rows = _db_load(product_id)
+            _cache_put(product_id, rows)
+            return rows
         except Exception as err:
             _warn_fallback(err)
-    return [r for r in _json_load(path) if r.get("product_id") == product_id]
+    rows = [r for r in _json_load(path) if r.get("product_id") == product_id]
+    if path is None:
+        _cache_put(product_id, rows)
+    return rows
 
 
 def _json_load(path=None):

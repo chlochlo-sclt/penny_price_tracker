@@ -16,26 +16,44 @@ import numpy as np
 import pandas as pd
 
 
-OUTLIER_LOW, OUTLIER_HIGH = 0.55, 1.8     # vs the trailing 60-day median
+OUTLIER_HIGH = 1.8          # vs the trailing 60-day median
+FLICKER_LOW = 0.55          # suspiciously cheap, but only noise if it doesn't last
+FLICKER_HOURS = 12          # a real sale holds longer than this
 
 
 def clean_outliers(history: pd.DataFrame) -> pd.DataFrame:
     """Drop bogus points such as a $99.99 third-party offer on a $260 item.
 
-    A point is dropped if it is below 55% or above 180% of the median of the 60 days
-    BEFORE it (trailing only, so it never looks ahead). Real price cuts that large
-    in one step are very rare on Amazon; flickers like this are common.
+    Depth alone can't tell a glitch from a genuine 50%-off sale, so a very low
+    point is only dropped when it does NOT last: if the price is still that low
+    FLICKER_HOURS later, it is treated as a real discount and kept. Absurdly high
+    points are dropped outright. Both tests look only at earlier data plus how
+    long a price persisted, never at future prices.
     """
     if len(history) < 5:
         return history
     ts = pd.to_datetime(history["timestamp"], utc=True, format="ISO8601").dt.tz_localize(None)
-    price = pd.Series(history["price"].to_numpy(dtype=float), index=ts.to_numpy())
     order = np.argsort(ts.to_numpy(), kind="stable")
-    price = price.iloc[order]
+    t = ts.to_numpy()[order]
+    price = pd.Series(history["price"].to_numpy(dtype=float)[order], index=t)
+
     ref = price.rolling("60D", closed="left").median()
-    ok = ref.isna() | ((price >= OUTLIER_LOW * ref) & (price <= OUTLIER_HIGH * ref))
-    keep = np.zeros(len(history), dtype=bool)
-    keep[order] = ok.to_numpy()
+    low = price < FLICKER_LOW * ref
+    high = price > OUTLIER_HIGH * ref
+
+    # how long each low price held: time until the next point that is NOT low
+    p = price.to_numpy()
+    lasted = np.zeros(len(p), dtype="timedelta64[ns]")
+    for i in np.flatnonzero(low.to_numpy()):
+        j = i + 1
+        while j < len(p) and p[j] <= p[i] * 1.02:
+            j += 1
+        lasted[i] = (t[j] if j < len(p) else t[-1]) - t[i]
+    flicker = low.to_numpy() & (lasted < np.timedelta64(FLICKER_HOURS, "h"))
+
+    bad = (flicker | high.to_numpy()) & ~ref.isna().to_numpy()
+    keep = np.ones(len(history), dtype=bool)
+    keep[order] = ~bad
     return history[keep]
 
 

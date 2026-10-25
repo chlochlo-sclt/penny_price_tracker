@@ -1,10 +1,12 @@
 
 import json
+from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.current_price import current_price
 from app.decision import decide, resolve_preferences
 from app.forecast import forecast, history_source
 from app.history_store import ensure_history, get_history
@@ -25,6 +27,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+BUY_REMINDER_DAYS = 3        # nudge this many days before the deadline
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PREDICT_FILE = PROJECT_ROOT / "predict.json"
@@ -116,6 +120,37 @@ def predict_for_product(req: PredictRequest):
         data_source=history_source(history),
         history_status=status,
     )
+
+
+@app.get("/watch-check/{product_id}")
+def watch_check(product_id: str, target_price: float | None = None, deadline: str | None = None):
+    """Today's price for a watched product, and whether it has hit the target.
+
+    The watchlist calls this from a background alarm, when the user is not on the
+    product page, so the price cannot come from the extension. One scrape per
+    product per hour; the result is also appended to the product's history.
+
+    buy_reminder is true within BUY_REMINDER_DAYS of the deadline, which is the
+    "it never hit your target, buy it before you run out of time" nudge.
+    """
+    try:
+        now = current_price(product_id)
+    except Exception as err:
+        raise HTTPException(status_code=503, detail=str(err))
+
+    hit = target_price is not None and now["price"] <= target_price
+    reminder = False
+    days_left = None
+    if deadline:
+        try:
+            left = (date.fromisoformat(deadline) - date.today()).days
+            days_left = left
+            reminder = not hit and left <= BUY_REMINDER_DAYS
+        except ValueError:
+            raise HTTPException(status_code=422, detail="deadline must be YYYY-MM-DD")
+
+    return {**now, "target_price": target_price, "target_hit": hit,
+            "days_left": days_left, "buy_reminder": reminder}
 
 
 @app.get("/history-status/{product_id}")

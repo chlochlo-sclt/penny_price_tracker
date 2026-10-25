@@ -12,8 +12,14 @@ import os
 import re
 import threading
 import time
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from app.history_store import MIN_REAL_DAYS, real_span_days
+
+# The server process needs APIFY_API_TOKEN too, not just the CLI scripts.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 ASIN_RE = re.compile(r"^[A-Z0-9]{10}$")
 COOLDOWN_SECONDS = 600          # don't re-try a failed ASIN for 10 minutes

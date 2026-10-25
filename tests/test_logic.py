@@ -202,10 +202,23 @@ def test_without_a_database_url_the_json_file_is_used(tmp_path, monkeypatch):
 def test_unreachable_database_falls_back_to_the_json_file(tmp_path, monkeypatch):
     # a URL that cannot connect (or a missing driver) must never lose scraped data
     monkeypatch.setenv("TIGER_DATABASE_URL", "postgresql://nobody:x@127.0.0.1:1/none")
+    monkeypatch.setattr(history_store, "_db_down_until", 0.0)   # reset after this test
     monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
     assert save_observations([_row("F", "2026-10-24T10:00:00Z", 10.0)]) == (1, 1)
     assert len(get_history("F")) == 1
     assert (tmp_path / "h.json").exists()
+
+
+def test_a_down_database_is_skipped_until_the_cooldown_expires(monkeypatch):
+    """One failed connection must not make every later request wait again."""
+    import time
+    monkeypatch.setenv("TIGER_DATABASE_URL", "postgres://x/y")
+    monkeypatch.setattr(history_store, "_db_down_until", 0.0)
+    assert history_store._use_db(None) is True
+    history_store._mark_db_down()
+    assert history_store._use_db(None) is False
+    monkeypatch.setattr(history_store, "_db_down_until", time.monotonic() - 1)
+    assert history_store._use_db(None) is True
 
 
 def test_an_explicit_path_always_uses_json_even_with_a_database_url(tmp_path, monkeypatch):
@@ -254,11 +267,20 @@ def test_backtest_has_no_lookahead():
 
 
 # ---- live fetch ----
-def _live(real_days=0, worker=None, token="x"):
-    """Context-free helper: patch live_fetch for one test, return an undo function."""
+def _live(real_days=0, worker=None, token="x", live="1"):
+    """Context-free helper: patch live_fetch for one test, return an undo function.
+
+    Tests must never depend on the developer's own .env, so LIVE_FETCH and the
+    Apify token are both set explicitly here.
+    """
     import os
     from app import live_fetch as lf
-    saved = (lf.real_span_days, lf.worker, os.environ.get("APIFY_API_TOKEN"), dict(lf._state))
+    saved = (lf.real_span_days, lf.worker, os.environ.get("APIFY_API_TOKEN"),
+             dict(lf._state), os.environ.get("LIVE_FETCH"))
+    if live is None:
+        os.environ.pop("LIVE_FETCH", None)
+    else:
+        os.environ["LIVE_FETCH"] = live
     lf.real_span_days = lambda pid, path=None: real_days
     lf.worker = worker or (lambda asin: None)
     if token:
@@ -274,6 +296,10 @@ def _live(real_days=0, worker=None, token="x"):
         else:
             os.environ["APIFY_API_TOKEN"] = saved[2]
         lf._state.clear(); lf._state.update(saved[3])
+        if saved[4] is None:
+            os.environ.pop("LIVE_FETCH", None)
+        else:
+            os.environ["LIVE_FETCH"] = saved[4]
     return lf, undo
 
 
@@ -312,6 +338,17 @@ def test_live_fetch_failure_is_reported_and_not_retried_immediately():
         undo()
 
 
+def test_live_fetch_is_off_when_live_fetch_is_zero():
+    """LIVE_FETCH=0 must stop any Apify run (that is how we protect the quota)."""
+    calls = []
+    lf, undo = _live(worker=lambda asin: calls.append(asin), live="0")
+    try:
+        assert lf.ensure_real_history("B0TESTASIN", background=False) == "unavailable"
+        assert calls == []
+    finally:
+        undo()
+
+
 def test_live_fetch_unavailable_without_token_or_for_non_asin():
     lf, undo = _live(token=None)
     try:
@@ -325,16 +362,23 @@ def test_live_fetch_unavailable_without_token_or_for_non_asin():
         undo()
 
 
-def test_outlier_flicker_is_removed():
+def test_outlier_flicker_is_removed_but_real_sales_are_kept():
+    """A 20-minute glitch is noise; a week at half price is a real sale."""
     import pandas as pd
-    from app.forecast import clean_outliers, daily_series
-    ts = pd.date_range("2026-01-01", periods=120, freq="D").strftime("%Y-%m-%dT12:00:00Z")
-    prices = [260.0] * 120
-    prices[100] = 99.99
-    prices[119] = 99.99
-    h = pd.DataFrame({"timestamp": ts, "price": prices, "source": "historical"})
-    assert len(clean_outliers(h)) == 118
-    assert daily_series(h).min() == 260.0
+    from app.forecast import clean_outliers
+    base = pd.Timestamp("2026-01-01T08:00:00Z")
+    rows = []
+    for d in range(200):
+        t = base + pd.Timedelta(days=d)
+        rows.append((t.strftime("%Y-%m-%dT%H:%M:%SZ"), 48.0 if 100 <= d < 107 else 100.0))
+        if d == 150:
+            rows.append(((t + pd.Timedelta(hours=4)).strftime("%Y-%m-%dT%H:%M:%SZ"), 20.0))
+            rows.append(((t + pd.Timedelta(hours=4, minutes=20)).strftime("%Y-%m-%dT%H:%M:%SZ"), 100.0))
+    h = pd.DataFrame(rows, columns=["timestamp", "price"])
+    h["source"] = "historical"
+    kept = clean_outliers(h)
+    assert (kept["price"] == 48.0).sum() == 7      # genuine half-price week survives
+    assert (kept["price"] == 20.0).sum() == 0      # glitch removed
 
 
 def test_confidence_is_capped_without_a_proven_signal():
@@ -342,3 +386,154 @@ def test_confidence_is_capped_without_a_proven_signal():
     assert _confidence(400, 40, has_proven_signal=True) == "high"
     assert _confidence(400, 40, has_proven_signal=False) == "medium"
     assert _confidence(30, 1, has_proven_signal=True) == "low"
+
+
+def test_live_fetch_reads_env_file_at_import():
+    """The server must see APIFY_API_TOKEN from .env, not just the CLI scripts."""
+    import inspect
+    from app import live_fetch
+    assert "load_dotenv" in inspect.getsource(live_fetch)
+
+
+def test_backtest_all_handles_no_eligible_products(capsys=None):
+    from app import backtest_all
+    out = backtest_all.run(min_days=99999)
+    assert out == []
+
+
+def test_load_rows_reads_every_product_from_the_database(monkeypatch):
+    """load_rows must use Tiger Data when configured, not just the JSON file."""
+    from app import history_store as hs
+    monkeypatch.setenv("TIGER_DATABASE_URL", "postgres://x/y")
+    monkeypatch.setattr(hs, "_db_load_all", lambda: [{"product_id": "A"}, {"product_id": "B"}])
+    assert [r["product_id"] for r in hs.load_rows()] == ["A", "B"]
+
+
+def test_storage_reads_env_file_at_import():
+    """Any entry point must see TIGER_DATABASE_URL, not just the CLI scripts."""
+    import inspect
+    from app import history_store
+    assert "load_dotenv" in inspect.getsource(history_store)
+
+
+def test_database_connection_is_reused(monkeypatch):
+    """One /predict makes several queries; reconnecting each time was too slow."""
+    from app import history_store as hs
+
+    calls = {"n": 0}
+
+    class FakeCur:
+        description = [("product_id",), ("timestamp",), ("price",),
+                       ("currency",), ("source",), ("title",), ("data_type",)]
+
+        def execute(self, *a): pass
+        def fetchall(self): return []
+        def fetchone(self): return (0,)
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    class FakeConn:
+        closed = False
+
+        def cursor(self): return FakeCur()
+        def commit(self): pass
+        def close(self): pass
+
+    def fake_connect(*a, **k):
+        calls["n"] += 1
+        return FakeConn()
+
+    monkeypatch.setenv("TIGER_DATABASE_URL", "postgres://x/y")
+    monkeypatch.setattr(hs, "_conn", None)
+    monkeypatch.setattr(hs, "_db_ready", True)
+    import sys, types
+    fake = types.ModuleType("psycopg2")
+    fake.connect = fake_connect
+    monkeypatch.setitem(sys.modules, "psycopg2", fake)
+
+    hs._db_load("A")
+    hs._db_load("B")
+    hs._db_load("C")
+    assert calls["n"] == 1, f"opened {calls['n']} connections for 3 queries"
+    hs._drop_conn()
+
+
+def test_product_rows_are_cached_between_calls(monkeypatch):
+    """One /predict reads a product three times; that must be one query, not three."""
+    from app import history_store as hs
+    hs.invalidate_cache()
+    calls = {"n": 0}
+
+    def fake_db_load(pid):
+        calls["n"] += 1
+        return [_row(pid, "2026-10-24T10:00:00Z", 10.0)]
+
+    monkeypatch.setenv("TIGER_DATABASE_URL", "postgres://x/y")
+    monkeypatch.setattr(hs, "_db_down_until", 0.0)
+    monkeypatch.setattr(hs, "_db_load", fake_db_load)
+    hs._product_rows("CACHED")
+    hs._product_rows("CACHED")
+    hs._product_rows("CACHED")
+    assert calls["n"] == 1, f"made {calls['n']} queries for 3 reads"
+    hs.invalidate_cache()
+
+
+def test_saving_new_rows_clears_the_cache(tmp_path, monkeypatch):
+    """A live fetch must show up immediately, not after the cache expires."""
+    from app import history_store as hs
+    monkeypatch.delenv("TIGER_DATABASE_URL", raising=False)
+    monkeypatch.setattr(hs, "HISTORY_PATH", tmp_path / "h.json")
+    hs.invalidate_cache()
+    hs.save_observations([_row("FRESH", "2026-10-20T10:00:00Z", 10.0)])
+    assert len(hs._product_rows("FRESH")) == 1
+    hs.save_observations([_row("FRESH", "2026-10-21T10:00:00Z", 9.0)])
+    assert len(hs._product_rows("FRESH")) == 2      # stale cache would still say 1
+    hs.invalidate_cache()
+
+
+# ---- watch checks ----
+def _price_patch(monkeypatch, record=None, fail=False):
+    from app import current_price as cp
+    cp._cache.clear()
+    monkeypatch.setenv("APIFY_API_TOKEN", "x")
+    monkeypatch.setenv("PRICE_CHECKS", "1")
+
+    def scrape(asin):
+        if fail:
+            raise RuntimeError("apify down")
+        return record or {"product_id": asin, "price": 17.0, "currency": "USD",
+                          "title": "T", "timestamp": "2026-10-24T10:00:00Z",
+                          "source": "scraped", "data_type": "observed"}
+    monkeypatch.setattr(cp, "_scrape", scrape)
+    monkeypatch.setattr(cp, "save_observations", lambda rows: (len(rows), len(rows)))
+    return cp
+
+
+def test_current_price_is_cached_so_repeat_checks_are_free(monkeypatch):
+    calls = {"n": 0}
+    cp = _price_patch(monkeypatch)
+    inner = cp._scrape
+
+    def counted(asin):
+        calls["n"] += 1
+        return inner(asin)
+    monkeypatch.setattr(cp, "_scrape", counted)
+
+    first = cp.current_price("B00TTD9BRC")
+    second = cp.current_price("B00TTD9BRC")
+    assert first["price"] == 17.0
+    assert first["cached"] is False and second["cached"] is True
+    assert calls["n"] == 1, "a second check must not spend another Apify run"
+    cp._cache.clear()
+
+
+def test_price_checks_can_be_switched_off(monkeypatch):
+    cp = _price_patch(monkeypatch)
+    monkeypatch.setenv("PRICE_CHECKS", "0")
+    assert cp.enabled() is False
+    try:
+        cp.current_price("B00TTD9BRC")
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("should refuse when price checks are off")

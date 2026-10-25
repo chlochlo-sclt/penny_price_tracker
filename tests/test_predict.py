@@ -61,6 +61,7 @@ def test_predict_expected_drop():
 
 def test_post_predict_uses_real_history(tmp_path, monkeypatch):
     from app import history_store
+    monkeypatch.delenv("TIGER_DATABASE_URL", raising=False)   # tests never touch the real database
     monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
 
     body = {"product_id": "B0TESTASIN1", "price": 120.0, "currency": "USD",
@@ -74,6 +75,7 @@ def test_post_predict_uses_real_history(tmp_path, monkeypatch):
 
 def test_post_predict_rejects_non_usd(tmp_path, monkeypatch):
     from app import history_store
+    monkeypatch.delenv("TIGER_DATABASE_URL", raising=False)   # tests never touch the real database
     monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
 
     body = {"product_id": "B0TESTASIN1", "price": 99.0, "currency": "EUR"}
@@ -93,6 +95,7 @@ def test_cors_allows_extension_origin():
 
 def test_post_predict_accepts_savings_confidence_and_deadline(tmp_path, monkeypatch):
     from app import history_store
+    monkeypatch.delenv("TIGER_DATABASE_URL", raising=False)   # tests never touch the real database
     monkeypatch.setattr(history_store, "HISTORY_PATH", tmp_path / "h.json")
 
     body = {"product_id": "B0TESTASIN2", "price": 120.0, "currency": "USD",
@@ -109,3 +112,36 @@ def test_post_predict_rejects_out_of_range_settings():
     body = {"product_id": "B0TESTASIN2", "price": 120.0,
             "preferences": {"min_confidence_pct": 20}}
     assert client.post("/predict", json=body).status_code == 422
+
+
+def test_watch_check_reports_target_hit_and_buy_reminder(monkeypatch):
+    """The watchlist's two jobs: target reached, and nudge before the deadline."""
+    from datetime import date, timedelta
+    from app import main as main_mod
+
+    monkeypatch.setattr(main_mod, "current_price", lambda pid: {
+        "asin": pid, "price": 17.0, "currency": "USD", "title": "T",
+        "as_of": "2026-10-24T10:00:00Z", "cached": False})
+
+    hit = client.get("/watch-check/B00TTD9BRC", params={"target_price": 18.0}).json()
+    assert hit["target_hit"] is True
+
+    soon = (date.today() + timedelta(days=2)).isoformat()
+    miss = client.get("/watch-check/B00TTD9BRC",
+                      params={"target_price": 5.0, "deadline": soon}).json()
+    assert miss["target_hit"] is False
+    assert miss["buy_reminder"] is True          # deadline is 2 days away
+
+    later = (date.today() + timedelta(days=30)).isoformat()
+    early = client.get("/watch-check/B00TTD9BRC",
+                       params={"target_price": 5.0, "deadline": later}).json()
+    assert early["buy_reminder"] is False
+
+
+def test_watch_check_rejects_a_bad_deadline(monkeypatch):
+    from app import main as main_mod
+    monkeypatch.setattr(main_mod, "current_price", lambda pid: {
+        "asin": pid, "price": 17.0, "currency": "USD", "title": "T",
+        "as_of": "2026-10-24T10:00:00Z", "cached": False})
+    r = client.get("/watch-check/B00TTD9BRC", params={"deadline": "next tuesday"})
+    assert r.status_code == 422
