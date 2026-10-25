@@ -202,6 +202,15 @@ def ensure_history(product_id, current_price, path=None, min_days=MIN_DAYS):
     save_observations(df.to_dict("records"), path)
 
 
+def real_span_days(product_id, path=None):
+    """Days covered by this product's non-simulated history (0 if none)."""
+    real = [r["timestamp"] for r in _product_rows(product_id, path) if r["source"] != "simulated"]
+    if not real:
+        return 0
+    ts = pd.to_datetime(pd.Series(real), utc=True, format="ISO8601")
+    return int((ts.max() - ts.min()).days)
+
+
 def get_history(product_id, path=None) -> pd.DataFrame:
     """All rows for one product. Simulated rows never override real ones: with
     enough real history they are all dropped, otherwise only the ones that

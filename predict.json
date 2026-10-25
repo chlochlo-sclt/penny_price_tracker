@@ -10,5 +10,6 @@
   "confidence": "medium",
   "best_day": "2026-11-27",
   "explanation": "Prices for this item usually dip around Black Friday. There is a 72% chance the price drops about 12% within the next five weeks.",
-  "data_source": "simulated"
+  "data_source": "simulated",
+  "history_status": "ready"
 }
