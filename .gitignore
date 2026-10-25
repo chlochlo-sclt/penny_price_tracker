@@ -18,4 +18,6 @@ __pycache__/
 data/raw/
 data/processed/
 
-*.zip
+*.zipdata/processed/
+data/raw/
+data/backtest/
