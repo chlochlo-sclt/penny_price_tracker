@@ -9,9 +9,11 @@
 //   target_price     price_at_watch reduced by target_pct
 //   deadline_date    "YYYY-MM-DD", from the deadline slider
 //   created_at       ISO timestamp
-//   notified         { drop, deadline }: which notifications were already
-//                    shown, so each event notifies only once
-//   last_price, last_checked_at   last successful price check, if any
+//   notified         { drop }: the price-drop notification was shown; the
+//                    watch is then done and never checked again
+//   last_price       last known real price (from /watch-check or the page)
+//   last_checked_at  when the price was last checked (attempts count too)
+//   last_check       { source, ok, cached, error, at } of that check
 
 const WATCHES_KEY = "watches";
 
@@ -39,10 +41,47 @@ function createWatch(product, { min_savings_pct, deadline_days }) {
     target_price: Math.round(product.price * (1 - min_savings_pct / 100) * 100) / 100,
     deadline_date: toIsoDate(addDays(startOfDay(), deadline_days)),
     created_at: new Date().toISOString(),
-    notified: { drop: false, deadline: false },
+    notified: { drop: false },
     last_price: null,
     last_checked_at: null,
+    last_check: null,
   };
+}
+
+/** Still worth checking: the target hasn't been hit and the deadline hasn't passed. */
+function isWatchActive(watch, now = new Date()) {
+  return !watch.notified?.drop && daysBetween(now, parseIsoDate(watch.deadline_date)) >= 0;
+}
+
+/**
+ * Due for a background check: active, and not checked in the last
+ * WATCH_CHECK_INTERVAL_HOURS. A watch that was never checked counts from when
+ * it was created, so creating a watch (or reloading the extension right
+ * after) never triggers an immediate check.
+ */
+function isWatchDue(watch, now = new Date()) {
+  const since = Date.parse(watch.last_checked_at ?? watch.created_at);
+  return isWatchActive(watch, now) && now - since >= WATCH_CHECK_INTERVAL_HOURS * 60 * 60 * 1000;
+}
+
+// ---- Daily cap on backend checks -----------------------------------------
+// { date: "YYYY-MM-DD" (local), count } in chrome.storage.local; a new day
+// starts again at 0.
+
+const CHECK_BUDGET_KEY = "watchCheckBudget";
+
+async function getCheckBudget(now = new Date()) {
+  const today = toIsoDate(now);
+  const stored = await storageGet("local", CHECK_BUDGET_KEY, null);
+  return stored?.date === today ? stored : { date: today, count: 0 };
+}
+
+/** Counts one backend check against today's cap. Returns the new count. */
+async function useCheckBudget(now = new Date()) {
+  const budget = await getCheckBudget(now);
+  budget.count += 1;
+  await storageSet("local", CHECK_BUDGET_KEY, budget);
+  return budget.count;
 }
 
 /** Adds a watch, replacing any existing watch for the same product. */

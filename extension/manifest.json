@@ -47,5 +47,14 @@
       ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "commands": {
+    "simulate-price-drop": {
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Alt+Shift+P"
+      },
+      "description": "dev: simulate a price drop for the newest watch (unpacked installs only)"
+    }
+  }
 }

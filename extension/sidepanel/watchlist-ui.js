@@ -1,6 +1,6 @@
 // The side-panel half of "wait & watch": the one context-dependent button on
-// the card, the watched-items list, and the dev-tools buttons that
-// simulate a price drop or an approaching deadline. Storage lives in
+// the card, the watched-items list, and the dev-tools "check price now"
+// button. Storage lives in
 // shared/watchlist.js; notifications come from background/background.js.
 //
 // The button depends on the verdict (set by sidepanel.js after each forecast):
@@ -108,21 +108,31 @@ const WatchlistUI = (() => {
     return `${cut.slice(0, cut.lastIndexOf(" ") > 20 ? cut.lastIndexOf(" ") : max).trimEnd()}…`;
   }
 
+  // The reminder lands this many days before the deadline (or today, if the
+  // deadline is closer than that), so there's time to buy before it.
+  const CALENDAR_DAYS_BEFORE_DEADLINE = 3;
+
   /**
    * Google Calendar's public event-template link (no sign-in or API): an
-   * all-day event on the watch's deadline, with the target, the product URL
-   * and the starting price. Every value is URL-encoded.
+   * all-day "buy by …" reminder 3 days before the watch's deadline, with
+   * the target, the deadline, the product URL and the starting price. Every
+   * value is URL-encoded.
    */
   function googleCalendarUrl(watch) {
-    const day = parseIsoDate(watch.deadline_date);
+    const deadline = parseIsoDate(watch.deadline_date);
+    const today = startOfDay();
+    const reminder = addDays(deadline, -CALENDAR_DAYS_BEFORE_DEADLINE);
+    const day = reminder < today ? today : reminder; // never a date in the past
     const compact = (date) => toIsoDate(date).replaceAll("-", "");
+    const deadlineText = formatShortDate(deadline).toLowerCase(); // "nov 13"
     const params = {
       action: "TEMPLATE",
-      text: `last day to buy: ${shortTitle(watch.title)} — check penny`,
-      // All-day events use an exclusive end date: the day after the deadline.
+      text: `buy by ${deadlineText}: ${shortTitle(watch.title)} — check penny`,
+      // All-day events use an exclusive end date: the next day.
       dates: `${compact(day)}/${compact(addDays(day, 1))}`,
       details: [
         `target: drops ${watch.target_pct}% to ${formatMoney(watch.target_price)} or less`,
+        `deadline: ${deadline.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`,
         `product: ${watch.url}`,
         `the price was ${formatMoney(watch.price_at_watch)} when you started watching.`,
       ].join("\n"),
@@ -154,7 +164,6 @@ const WatchlistUI = (() => {
   function statusText(watch) {
     if (watch.notified?.drop) return "target price reached";
     if (daysBetween(new Date(), parseIsoDate(watch.deadline_date)) < 0) return "deadline passed";
-    if (watch.notified?.deadline) return "deadline reminder sent";
     if (watch.last_price != null) return `last checked price: ${formatMoney(watch.last_price)}`;
     return "watching";
   }
@@ -192,7 +201,9 @@ const WatchlistUI = (() => {
     renderDevWatchOptions(watches);
   }
 
-  // ---- Dev tools: simulate notifications ----------------------------------
+  // ---- Dev tools: "check price now" ---------------------------------------
+
+  let devCheckTimer = null;
 
   function renderDevWatchOptions(watches) {
     const select = $("dev-watch");
@@ -201,34 +212,43 @@ const WatchlistUI = (() => {
       ...watches.map((watch) => new Option(watch.title || watch.product_id, watch.product_id)),
     );
     if (watches.some((w) => w.product_id === previous)) select.value = previous;
-    const none = watches.length === 0;
-    select.disabled = none;
-    $("dev-simulate-drop").disabled = none;
-    $("dev-simulate-deadline").disabled = none;
-    if (none) $("dev-simulate-status").textContent = "watch an item first.";
+    select.disabled = watches.length === 0;
+    if (watches.length === 0) $("dev-check-status").textContent = "watch an item first.";
+    renderDevCheckState();
   }
 
-  /** Asks the background worker to run its real notification path with faked conditions. */
-  async function simulate(event) {
-    const status = $("dev-simulate-status");
+  /** Today's count against the cap, and the button's 10-minute cooldown. */
+  async function renderDevCheckState() {
+    const budget = await getCheckBudget();
+    $("dev-check-count").textContent = `today: ${budget.count} of ${WATCH_CHECKS_PER_DAY} backend checks`;
+    const lastAt = await storageGet("local", DEV_CHECK_AT_KEY, null);
+    const readyAt = lastAt ? Date.parse(lastAt) + DEV_CHECK_COOLDOWN_MINUTES * 60 * 1000 : 0;
+    const coolingDown = Date.now() < readyAt;
+    const button = $("dev-check-now");
+    button.disabled = coolingDown || budget.count >= WATCH_CHECKS_PER_DAY || $("dev-watch").options.length === 0;
+    button.title = coolingDown ? `available again at ${new Date(readyAt).toLocaleTimeString()}` : "";
+    clearTimeout(devCheckTimer);
+    if (coolingDown) devCheckTimer = setTimeout(renderDevCheckState, readyAt - Date.now() + 500);
+  }
+
+  /** Asks the background worker for exactly one /watch-check for the selected watch. */
+  async function checkPriceNow() {
+    const status = $("dev-check-status");
     if (!globalThis.chrome?.runtime?.sendMessage) {
       status.textContent = "needs the installed extension (no background worker here).";
       return;
     }
+    $("dev-check-now").disabled = true;
+    status.textContent = "checking…";
     try {
-      const result = await chrome.runtime.sendMessage({
-        type: "SIMULATE_WATCH_EVENT",
-        event,
-        product_id: $("dev-watch").value,
-      });
-      status.textContent = !result?.ok
-        ? `failed: ${result?.error ?? "no response from the background worker"}`
-        : result.fired
-          ? `sent the "${result.fired}" notification.`
-          : "ran the check, but no notification was due.";
+      const result = await chrome.runtime.sendMessage({ type: "CHECK_WATCH_NOW", product_id: $("dev-watch").value });
+      status.textContent = result?.ok
+        ? `price ${formatMoney(result.price)} · ${result.cached ? "cached (free)" : "fresh (used credits)"} · target hit: ${result.target_hit ? "yes" : "no"}`
+        : `not checked: ${result?.error ?? "no response from the background worker"}`;
     } catch (err) {
-      status.textContent = `failed: ${err.message}`;
+      status.textContent = `not checked: ${err.message}`;
     }
+    await renderDevCheckState();
     await renderList();
   }
 
@@ -245,8 +265,7 @@ const WatchlistUI = (() => {
       else closeWatchlist();
     });
     $("watchlist-close").addEventListener("click", closeWatchlist);
-    $("dev-simulate-drop").addEventListener("click", () => simulate("drop"));
-    $("dev-simulate-deadline").addEventListener("click", () => simulate("deadline"));
+    $("dev-check-now").addEventListener("click", checkPriceNow);
 
     // The background worker updates watches (last price, notified flags).
     globalThis.chrome?.storage?.onChanged?.addListener((changes, area) => {
@@ -254,6 +273,7 @@ const WatchlistUI = (() => {
         renderList();
         refresh();
       }
+      if (area === "local" && (changes[CHECK_BUDGET_KEY] || changes[DEV_CHECK_AT_KEY])) renderDevCheckState();
     });
 
     await renderList();

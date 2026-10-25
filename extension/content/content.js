@@ -70,6 +70,12 @@
   // is open there's no receiver, so the error is expected and ignored.
   function announcePageChanged() {
     chrome.runtime.sendMessage({ type: "PAGE_CHANGED", url: location.href }).catch(() => {});
+    // The background worker uses this price to update a watch on this
+    // product for free (no backend check); it ignores products not watched.
+    const result = detectProduct();
+    if (result.status === "ok") {
+      chrome.runtime.sendMessage({ type: "PRODUCT_SEEN", product: result.product }).catch(() => {});
+    }
   }
   announcePageChanged();
   globalThis.navigation?.addEventListener("navigatesuccess", announcePageChanged);

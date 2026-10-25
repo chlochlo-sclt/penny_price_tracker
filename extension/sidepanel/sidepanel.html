@@ -217,11 +217,13 @@
             <span class="dev-panel-label">watched item</span>
             <select class="dev-panel-select" id="dev-watch"></select>
           </label>
+          <!-- Exactly one GET /watch-check for the selected watch (background.js). -->
           <div class="dev-panel-buttons">
-            <button class="dev-panel-button" id="dev-simulate-drop" type="button">simulate price drop</button>
-            <button class="dev-panel-button" id="dev-simulate-deadline" type="button">simulate deadline approaching</button>
+            <button class="dev-panel-button" id="dev-check-now" type="button">check price now</button>
           </div>
-          <p class="dev-panel-status" id="dev-simulate-status" aria-live="polite"></p>
+          <p class="dev-panel-hint">an uncached check costs apify credits, so this works once every 10 minutes.</p>
+          <p class="dev-panel-status" id="dev-check-status" aria-live="polite"></p>
+          <p class="dev-panel-hint" id="dev-check-count"></p>
         </div>
       </details>
 
