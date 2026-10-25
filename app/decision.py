@@ -29,6 +29,44 @@ def _date_text(iso):
     return f"{d.strftime('%b')} {d.day}"
 
 
+CLUSTERED = 0.35        # low timings this concentrated make the date worth naming
+LOOSE = 0.12            # below this they are spread right across the window
+MEANINGFUL_SAVING = 0.01   # a predicted low this close to today's price isn't news
+
+
+def _low_price_text(fc, current_price, target):
+    """The headline number: what you'd likely pay, and when.
+
+    Uses the predicted low when it is actually below today's price; otherwise the
+    user's own target, since quoting a "low" equal to today's price reads as a bug.
+    """
+    low = fc.get("predicted_low_usd")
+    price = float(current_price)
+    if low and low < price * (1 - MEANINGFUL_SAVING):
+        return f"about ${low:,.2f}"
+    return f"about ${target:,.2f}"
+
+
+def _when_text(fc, days):
+    """Short version of when the low lands, and how much to trust it."""
+    day = fc.get("likely_low_day")
+    if not day:
+        return f"within {days} days"
+    when = _date_text(day)
+    cal = fc.get("low_day_reason")
+    if cal:
+        return (f"around {when} (cheapest then in {cal['years_below']} of the last "
+                f"{cal['years']} years)")
+    strength = fc.get("low_day_strength") or 0.0
+    if strength >= CLUSTERED:
+        return f"around {when}"
+    if fc.get("low_day_half") == "late":
+        return f"later in your {days} days"
+    if fc.get("low_day_half") == "early":
+        return f"earlier in your {days} days"
+    return f"any time in your {days} days"
+
+
 def decide(fc, current_price, prefs=None):
     """Returns {recommendation, best_day, explanation}. best_day is always set."""
     p = resolve_preferences(prefs)
@@ -47,13 +85,12 @@ def decide(fc, current_price, prefs=None):
 
     if chance >= need_pct:
         day = fc["likely_low_day"] or today
-        text = (f"Wait: in about {chance}% of comparable past {days}-day windows the price fell at least "
-                f"{want_pct:g}% (to about ${target:,.2f} or lower), which meets your "
-                f"{need_pct:g}% confidence level.")
-        if fc["likely_low_day"]:
-            text += f" The lowest price most often comes around {_date_text(day)}."
+        text = (f"Wait — likely {_low_price_text(fc, current_price, target)} "
+                f"{_when_text(fc, days)}. "
+                f"{chance}% of past {days}-day windows dropped {want_pct:g}%+, "
+                f"over your {need_pct:g}% threshold.")
         return {"recommendation": "wait", "best_day": day, "explanation": text}
 
     return {"recommendation": "buy_now", "best_day": today,
-            "explanation": f"Buy now: in only about {chance}% of comparable past {days}-day windows did the price "
-                           f"fall {want_pct:g}% or more, below your {need_pct:g}% confidence level."}
+            "explanation": f"Buy now — only {chance}% of past {days}-day windows dropped "
+                           f"{want_pct:g}%+, under your {need_pct:g}% threshold."}

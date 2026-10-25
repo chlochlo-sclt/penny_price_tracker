@@ -603,3 +603,130 @@ def test_history_status_never_starts_a_fetch():
         assert calls == []
     finally:
         undo()
+
+
+# ---- best-day wording ----
+def _timing_fc(strength, half, day="2026-11-10"):
+    return {"enough_data": True, "p_drop": 0.8, "today": "2026-10-24",
+            "likely_low_day": day, "low_day_strength": strength, "low_day_half": half,
+            "low_day_reason": None, "predicted_low_usd": 88.0,
+            "history_days": 1000, "n_events": 50}
+
+
+def test_a_clustered_low_day_is_named():
+    from app.decision import decide
+    text = decide(_timing_fc(0.6, "late"), 100.0, {"min_confidence_pct": 50})["explanation"]
+    assert "around Nov 10" in text
+
+
+def test_a_flat_low_day_is_not_presented_as_a_best_day():
+    """Measured on real data, low timings are usually spread across the window.
+    Naming that midpoint as the best day would claim precision we don't have."""
+    from app.decision import decide
+    text = decide(_timing_fc(0.0, None), 100.0, {"min_confidence_pct": 50})["explanation"]
+    assert "any time in your" in text
+    assert "Nov 10" not in text
+
+
+def test_a_late_tilt_is_described_as_a_tilt():
+    from app.decision import decide
+    text = decide(_timing_fc(0.2, "late"), 100.0, {"min_confidence_pct": 50})["explanation"]
+    assert "later in your" in text
+    assert "Nov 10" not in text          # a flat-ish timing must not name a date
+
+
+def test_best_day_is_still_returned_even_when_the_timing_is_flat():
+    """The field stays populated so the panel's layout never breaks."""
+    from app.decision import decide
+    v = decide(_timing_fc(0.0, None), 100.0, {"min_confidence_pct": 50})
+    assert v["best_day"] == "2026-11-10"
+
+
+# ---- calendar sale dates ----
+def _series_with_black_friday(years=5, drop=0.12):
+    """Flat price all year, except a dip in the last week of November."""
+    import pandas as pd
+    rows = []
+    for y in range(2026 - years, 2026):
+        for d in pd.date_range(f"{y}-01-01", f"{y}-12-31", freq="D"):
+            price = 100.0
+            if d.month == 11 and 24 <= d.day <= 29:
+                price = 100.0 * (1 - drop)
+            rows.append({"timestamp": d.strftime("%Y-%m-%dT12:00:00Z"),
+                         "price": price, "source": "historical"})
+    return pd.DataFrame(rows)
+
+
+def test_calendar_finds_a_real_sale_date():
+    """The window-offset method cannot see Black Friday; this one must."""
+    import pandas as pd
+    from app.forecast import calendar_low_day, daily_series
+    s = daily_series(_series_with_black_friday())
+    cal = calendar_low_day(s, pd.Timestamp("2026-10-25"), 35)
+    assert cal is not None
+    assert cal["date"].startswith("2026-11-2")       # the last week of November
+    assert cal["below_pct"] >= 3.0
+    assert cal["years_below"] >= 3
+
+
+def test_calendar_finds_nothing_on_a_flat_price():
+    import pandas as pd
+    from app.forecast import calendar_low_day, daily_series
+    rows = [{"timestamp": d.strftime("%Y-%m-%dT12:00:00Z"), "price": 100.0,
+             "source": "historical"}
+            for d in pd.date_range("2021-01-01", "2026-10-25", freq="D")]
+    s = daily_series(pd.DataFrame(rows))
+    assert calendar_low_day(s, pd.Timestamp("2026-10-25"), 35) is None
+
+
+def test_calendar_needs_the_date_in_most_years():
+    """A one-off dip in a single year is not a sale date."""
+    import pandas as pd
+    from app.forecast import calendar_low_day, daily_series
+    rows = []
+    for d in pd.date_range("2021-01-01", "2026-10-25", freq="D"):
+        price = 100.0
+        if d.year == 2023 and d.month == 11 and 24 <= d.day <= 29:
+            price = 80.0
+        rows.append({"timestamp": d.strftime("%Y-%m-%dT12:00:00Z"), "price": price,
+                     "source": "historical"})
+    s = daily_series(pd.DataFrame(rows))
+    assert calendar_low_day(s, pd.Timestamp("2026-10-25"), 35) is None
+
+
+def test_calendar_date_is_explained_with_its_evidence():
+    from app.decision import decide
+    fc = {"enough_data": True, "p_drop": 0.8, "today": "2026-10-25",
+          "likely_low_day": "2026-11-27", "low_day_strength": 1.0, "low_day_half": None,
+          "low_day_reason": {"date": "2026-11-27", "below_pct": 6.7,
+                             "years_below": 3, "years": 4},
+          "history_days": 1500, "n_events": 80}
+    text = decide(fc, 190.0, {"min_confidence_pct": 50})["explanation"]
+    assert "Nov 27" in text and "3 of the last 4 years" in text
+    assert len(text) < 200, "the explanation must stay short enough for the card"
+
+
+def test_a_sale_date_outside_the_deadline_is_not_offered():
+    """Black Friday is irrelevant if the user needs it in 7 days."""
+    import pandas as pd
+    from app.forecast import calendar_low_day, daily_series
+    s = daily_series(_series_with_black_friday())
+    assert calendar_low_day(s, pd.Timestamp("2026-10-25"), 7) is None
+
+
+def test_explanation_leads_with_the_predicted_low_price():
+    from app.decision import decide
+    fc = _timing_fc(0.6, None)
+    fc["predicted_low_usd"] = 24.43
+    text = decide(fc, 30.0, {"min_confidence_pct": 50})["explanation"]
+    assert "$24.43" in text and "Nov 10" in text
+
+
+def test_a_predicted_low_equal_to_todays_price_is_not_quoted_as_a_low():
+    """Quoting a 'low' that matches today's price reads as a bug; use the target."""
+    from app.decision import decide
+    fc = _timing_fc(0.6, None)
+    fc["predicted_low_usd"] = 30.0
+    text = decide(fc, 30.0, {"min_savings_pct": 10, "min_confidence_pct": 50})["explanation"]
+    assert "$30.00" not in text
+    assert "$27.00" in text          # falls back to the user's own target

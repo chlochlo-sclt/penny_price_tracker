@@ -7,9 +7,11 @@ windows (shrunk toward the overall rate so small samples don't dominate).
 
 Also returned:
 - the likely range (and median) of the LOWEST price within the window
-- the most likely day that low happens (`likely_low_day`): in past windows that
-  did drop, how many days in the lowest price came. With years of history, the
-  same-time-of-year windows pick up Black Friday, Prime Day, etc. by themselves.
+- when in the window the low has landed (`likely_low_day`), plus how much that
+  timing clusters (`low_day_strength`, 0 = evenly spread) and which half it
+  favours (`low_day_half`). The strength matters: on real Amazon data these
+  timings are usually spread right across the window, which makes the median
+  date the window's midpoint and nothing more.
 Output keys match the extension's prediction contract (percent + USD fields).
 """
 import numpy as np
@@ -169,6 +171,61 @@ def _season_earns_its_keep(starts, event, p_all):
     return count >= 30 and err_b > 0 and (1 - err_s / err_b) >= SEASON_MIN_GAIN
 
 
+# A calendar date counts as a real sale date only if it is clearly cheaper than
+# its own surrounding weeks AND was cheaper in most years we can compare.
+CAL_NEIGHBOURHOOD = 21          # +/- days that define the "normal" price
+CAL_MIN_BELOW_PCT = 3.0         # must be at least this far below normal
+CAL_MIN_YEARS = 3               # need at least this many comparable years
+CAL_MIN_SHARE = 0.6             # and cheaper in at least this share of them
+
+
+def calendar_low_day(s, today, horizon_days):
+    """Find a genuine sale DATE in the next horizon_days, or None.
+
+    The window-offset method (below) only asks how far into a window the low
+    landed, so an evenly spread set of timings puts the answer at the window's
+    midpoint and Black Friday is invisible to it. This asks the calendar
+    question instead: on this day-of-year, in past years, was this product
+    actually cheaper than it was in the surrounding few weeks?
+
+    Returns {"date", "below_pct", "years_below", "years": n} or None.
+    """
+    idx = s.index
+    years = sorted({int(y) for y in idx.year.unique()})
+    best = None
+    for k in range(1, horizon_days + 1):
+        target = today + pd.Timedelta(days=k)
+        rels = []
+        for y in years:
+            try:
+                anchor = target.replace(year=y)
+            except ValueError:                       # Feb 29 in a non-leap year
+                continue
+            if anchor not in s.index:
+                continue
+            lo = anchor - pd.Timedelta(days=CAL_NEIGHBOURHOOD)
+            hi = anchor + pd.Timedelta(days=CAL_NEIGHBOURHOOD)
+            near = s[(idx >= lo) & (idx <= hi)]
+            if len(near) < 20:
+                continue
+            base = float(near.median())
+            if base > 0:
+                rels.append(float(s.loc[anchor]) / base - 1)
+        if len(rels) < CAL_MIN_YEARS:
+            continue
+        below_pct = -float(np.median(rels)) * 100
+        years_below = int(sum(1 for r in rels if r < -0.01))
+        if below_pct < CAL_MIN_BELOW_PCT:
+            continue
+        if years_below < max(2, round(CAL_MIN_SHARE * len(rels))):
+            continue
+        cand = {"date": target.date().isoformat(), "below_pct": round(below_pct, 1),
+                "years_below": years_below, "years": len(rels)}
+        if best is None or cand["below_pct"] > best["below_pct"]:
+            best = cand
+    return best
+
+
 def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today=None):
     s = daily_series(history)
     today = pd.Timestamp(today if today is not None else pd.Timestamp.today()).normalize()
@@ -179,6 +236,7 @@ def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today
                 "interval_low_usd": price, "interval_high_usd": price,
                 "predicted_low_usd": price, "confidence": "low",
                 "today": today.date().isoformat(), "likely_low_day": None,
+                "low_day_strength": 0.0, "low_day_half": None, "low_day_reason": None,
                 "history_days": int(len(s)), "n_events": 0, "enough_data": False}
 
     p = s.to_numpy()
@@ -225,14 +283,41 @@ def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today
     mid = min(price * (1 + float(np.quantile(pool, 0.5))), price)
     low = min(low, high)
 
-    # Most likely day of the low: median timing in past windows that actually dropped
+    # When in the window the low has landed, in past windows that actually dropped
     # (same-time-of-year ones when there are enough of them).
+    #
+    # How much to trust the date depends on whether those timings CLUSTER. Offsets
+    # spread evenly across the window put the median at its midpoint, which is a
+    # date carrying no information. low_day_strength measures that: the IQR of the
+    # offsets against the ~H/2 IQR of an even spread. 0 means flat, 1 means one day.
+    # Measured on real data, most products are flat at 14 days and tilt to the
+    # second half at 35, so the decision layer words the sentence accordingly.
     season_events = event & near_season
     pick = season_events if season_events.sum() >= 5 else event
     likely_low_day = None
+    low_day_strength = 0.0
+    low_half = None
+    low_day_reason = None
     if pick.sum() >= 3:
-        offset = int(round(float(np.median(low_offset[pick]))))
+        offs = low_offset[pick]
+        offset = int(round(float(np.median(offs))))
         likely_low_day = (today + pd.Timedelta(days=offset)).date().isoformat()
+        q1, q3 = np.percentile(offs, [25, 75])
+        low_day_strength = round(max(0.0, 1 - (q3 - q1) / (horizon_days / 2)), 2)
+        half = horizon_days / 2
+        later = float((offs > half).mean())
+        if later >= 0.6:
+            low_half = "late"
+        elif later <= 0.4:
+            low_half = "early"
+
+    # A real calendar sale date beats the window-offset guess whenever one exists.
+    cal = calendar_low_day(s, today, horizon_days)
+    if cal:
+        likely_low_day = cal["date"]
+        low_day_strength = 1.0
+        low_half = None
+        low_day_reason = cal
 
     return {
         "p_drop": round(p_hat, 3),
@@ -244,6 +329,9 @@ def forecast(history, current_price, horizon_days=14, drop_threshold=0.05, today
         "confidence": _confidence(len(s), int(event.sum()), use_season or used_state),
         "today": today.date().isoformat(),
         "likely_low_day": likely_low_day,
+        "low_day_strength": low_day_strength,
+        "low_day_half": low_half,
+        "low_day_reason": low_day_reason,
         "history_days": int(len(s)),
         "n_events": int(event.sum()),
         "enough_data": True,

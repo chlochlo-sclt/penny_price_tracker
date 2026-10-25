@@ -21,3 +21,4 @@ data/processed/
 *.zipdata/processed/
 data/raw/
 data/backtest/
+caldiag.py
