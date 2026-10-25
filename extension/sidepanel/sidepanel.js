@@ -14,12 +14,10 @@ console.log("penny side panel opened");
 const IS_DEV_INSTALL = !globalThis.chrome?.runtime?.getManifest?.().update_url;
 const DEV_SETTINGS_KEY = "devSettings";
 // source: "backend" calls POST /predict; "mock" reads `prediction` from mock/.
-// minConfidencePct overrides min_confidence_pct (see getPreferences in api.js).
 const DEFAULT_DEV_SETTINGS = {
   detection: "live",
   source: "backend",
   prediction: "predict.json",
-  minConfidencePct: DEFAULT_MIN_CONFIDENCE_PCT,
 };
 
 const DEV_MOCK_PRODUCT = {
@@ -62,18 +60,9 @@ async function setUpDevPanel() {
   const detectionSelect = $("dev-detection");
   const sourceSelect = $("dev-source");
   const predictionSelect = $("dev-prediction");
-  const confidenceInput = $("dev-min-confidence");
   detectionSelect.value = settings.detection;
   sourceSelect.value = settings.source;
   predictionSelect.value = settings.prediction;
-  confidenceInput.min = MIN_CONFIDENCE_RANGE.min;
-  confidenceInput.max = MIN_CONFIDENCE_RANGE.max;
-  confidenceInput.value = settings.minConfidencePct;
-  const showConfidence = () => {
-    $("dev-min-confidence-value").textContent = `${confidenceInput.value}%`;
-  };
-  showConfidence();
-  confidenceInput.addEventListener("input", showConfidence);
   // The mock file only matters in mock mode.
   const syncMockFileState = () => { predictionSelect.disabled = sourceSelect.value !== "mock"; };
   syncMockFileState();
@@ -85,11 +74,10 @@ async function setUpDevPanel() {
       detection: detectionSelect.value,
       source: sourceSelect.value,
       prediction: predictionSelect.value,
-      minConfidencePct: Number(confidenceInput.value),
     });
     run();
   };
-  for (const control of [detectionSelect, sourceSelect, predictionSelect, confidenceInput]) {
+  for (const control of [detectionSelect, sourceSelect, predictionSelect]) {
     control.addEventListener("change", onChange);
   }
 }
@@ -230,12 +218,10 @@ async function pollHistoryStatus(signal) {
 function handleHistoryStatus(status, dataSource) {
   cancelHistoryRetry();
   lastDataSource = dataSource;
-  if (status === "failed" || status === "unavailable") {
-    renderHistoryNotice("not_available", dataSource);
-    return;
-  }
+  // "ready", "failed" and "unavailable": just the data-source note, if the
+  // estimate isn't all real price history (render.js words it).
   if (status !== "fetching") {
-    renderHistoryNotice(null);
+    renderHistoryNotice(null, dataSource);
     return;
   }
   renderHistoryNotice("fetching", dataSource);
@@ -283,7 +269,7 @@ async function requestPrediction(sliderValues, { initial, retry = false }) {
   cancelHistoryRetry();
   const controller = (predictionController = new AbortController());
   const request = {
-    preferences: getPreferences(sliderValues, currentSettings.minConfidencePct),
+    preferences: getPreferences(sliderValues),
     price: currentProduct.price,
     currency: currentProduct.currency ?? "USD",
   };
@@ -328,7 +314,7 @@ function resetProduct() {
   renderHistoryNotice(null);
   currentProduct = null;
   WatchlistUI.setRecommendation(null);
-  $("watch-confirmation").hidden = true;
+  $("watch-confirmation-block").hidden = true;
 }
 
 /**
@@ -433,14 +419,12 @@ async function start() {
     cancelHistoryRetry();
     predictionController?.abort();
   });
-  // "why?" and "details" expand in place.
-  for (const [toggleId, panelId] of [["why-toggle", "why-panel"], ["details-toggle", "details-content"]]) {
-    $(toggleId).addEventListener("click", () => {
-      const open = $(toggleId).getAttribute("aria-expanded") !== "true";
-      $(toggleId).setAttribute("aria-expanded", String(open));
-      $(panelId).hidden = !open;
-    });
-  }
+  // "why?" expands the explanation in place.
+  $("why-toggle").addEventListener("click", () => {
+    const open = $("why-toggle").getAttribute("aria-expanded") !== "true";
+    $("why-toggle").setAttribute("aria-expanded", String(open));
+    $("why-panel").hidden = !open;
+  });
   setUpDevPanel();
   await followActiveTab();
   run();

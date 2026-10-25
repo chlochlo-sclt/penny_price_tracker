@@ -64,16 +64,15 @@
   --button-buy-hover: #34d399;
   --button-buy-text: #022c22;
 
-  /* Confidence chip dots (the word is always shown too) */
+  /* "how sure do you want to be?" slider fill */
+  --confidence-track-start: #94a3b8;
+  --confidence-track-end: #475569;
+
+  /* Confidence colors (kept for reuse) */
   --confidence-high: #047857;
   --confidence-medium: #b45309;
   --confidence-low: #b91c1c;
 
-  /* Price range bar */
-  --range-track: rgb(148 163 184 / 0.35);
-  --range-band: rgb(217 119 6 / 0.7);
-  --range-today: #0f172a;
-  --range-predicted: #3d2b1f;
 
   /* Coin (the penny) */
   --coin-face-light: #f7b27a;
@@ -190,10 +189,9 @@
   --confidence-medium: #fbbf24;
   --confidence-low: #f87171;
 
-  --range-track: rgb(255 255 255 / 0.2);
-  --range-band: rgb(251 191 36 / 0.75);
-  --range-today: #ffffff;
-  --range-predicted: #fde68a;
+  --confidence-track-start: #64748b;
+  --confidence-track-end: #cbd5e1;
+
 
 
   --mesh-dark-base: #0b1329;
@@ -384,7 +382,8 @@ body {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass,
   .product-line,
-  .chance-plate {
+  .chance-plate,
+  .history-notice {
     background: var(--glass-background-solid);
   }
 }
@@ -494,7 +493,7 @@ body {
    Coming back is immediate. Nothing here changes the layout. */
 .recommendation-card--updating .verdict,
 .recommendation-card--updating .chance-line,
-.recommendation-card--updating .best-day-line {
+.recommendation-card--updating .predicted-low-line {
   opacity: 0.55;
   transition: opacity 0.2s ease 0.2s;
 }
@@ -522,54 +521,91 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .recommendation-card--updating .verdict,
   .recommendation-card--updating .chance-line,
-  .recommendation-card--updating .best-day-line,
+  .recommendation-card--updating .predicted-low-line,
   .recommendation-card--updating .updating-indicator { transition: opacity 0s linear 0.2s; }
 }
 
 /* ---- 2. Verdict card and coin ---- */
 
+/* The verdict and "why?" top left, the coin on the right, the predicted
+   lowest price under the verdict, and the opened explanation below, full
+   width. */
 .verdict-card {
-  background: var(--glass-background-strong);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "head coin"
+    "low  coin"
+    "why  why";
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  column-gap: 10px;
+  row-gap: 4px;
   padding: 16px 18px;
+  background: var(--glass-background-strong);
   cursor: default;
 }
 
-/* One word per line, in a box as tall as the tallest verdict ("leaning" /
-   "buy" / "now"). Shorter verdicts are centered in it, so the cards below
-   never move when the verdict changes. */
-.verdict {
-  --verdict-size: clamp(38px, 12vw, 48px);
-  --verdict-line-height: 1.05;
-  --verdict-leaning-size: 15px;
-  --verdict-leaning-line-height: 1.3;
+.verdict-head {
+  grid-area: head;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
-  /* + 4px absorbs line-height rounding at narrow widths. */
-  height: calc(var(--verdict-leaning-size) * var(--verdict-leaning-line-height) + var(--verdict-size) * var(--verdict-line-height) * 2 + 4px);
+}
+
+.verdict-card .coin-stage {
+  grid-area: coin;
+}
+
+.verdict-card .predicted-low-line {
+  grid-area: low;
+  margin: 0;
+}
+
+.verdict-card .why-panel {
+  grid-area: why;
+  margin-top: 10px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--divider);
+}
+
+/* Always one line's height, so nothing below moves when the verdict changes:
+   - not leaning: "wait" or "buy now" on one line, large;
+   - leaning: "leaning" large, and beside it the verdict words smaller and
+     stacked, the stack exactly as tall as "leaning" (each word half the
+     height); a single word ("wait") is centered in it. */
+.verdict {
+  /* Scales down on narrow panels so the verdict, "why?" and the coin fit
+     side by side at 320px in every state. */
+  --verdict-size: clamp(26px, 8.6vw, 44px);
+  --verdict-line-height: 1.1;
+  display: flex;
+  align-items: center;
+  gap: 0.22em;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: calc(var(--verdict-size) * var(--verdict-line-height));
   margin: 0;
   font-size: var(--verdict-size);
   font-weight: 800;
   line-height: var(--verdict-line-height);
   letter-spacing: -0.03em;
+  white-space: nowrap;
   color: var(--verdict-wait);
   transition: color var(--color-transition-duration);
 }
 
-.verdict-leaning {
-  font-size: var(--verdict-leaning-size);
-  font-weight: 600;
-  line-height: var(--verdict-leaning-line-height);
-  letter-spacing: 0;
+.verdict-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: calc(var(--verdict-size) * var(--verdict-line-height));
+  font-size: calc(var(--verdict-size) * var(--verdict-line-height) / 2);
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
-.verdict-word {
+.verdict-stack-word {
   display: block;
 }
 
@@ -595,7 +631,7 @@ body {
    rim discs stacked between the two faces give it visible thickness.
    Hovering the verdict card tosses it (no toss with reduced motion). */
 .coin-stage {
-  --coin-size: 46px;
+  --coin-size: clamp(42px, 13vw, 54px);
   --coin-rest: rotateY(30deg) rotateX(12deg);
   /* The "p" is boxed-centered, but its descender makes it look low, so it's
      nudged up. In em of the letter, so it scales with the coin (about 1.6px
@@ -608,6 +644,8 @@ body {
   width: calc(var(--coin-size) + 16px);
   height: calc(var(--coin-size) + 16px);
   perspective: 800px;
+  /* A little below the verdict's centre line. */
+  transform: translateY(6px);
   cursor: pointer;
 }
 
@@ -709,7 +747,7 @@ body {
   line-height: 1.5;
 }
 
-.best-day-line {
+.predicted-low-line {
   margin: 2px 0 0;
   font-size: 13px;
   font-weight: 500;
@@ -736,10 +774,18 @@ body {
   color: var(--error);
 }
 
+/* On a soft glass plate, like the chance line, so it's readable over any
+   season's blobs. */
 .history-notice {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: -6px 0 0;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--glass-background-soft);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 .history-notice-spinner {
@@ -747,7 +793,7 @@ body {
   height: 14px;
 }
 
-.history-notice--unavailable .history-notice-spinner {
+.history-notice--static .history-notice-spinner {
   display: none;
 }
 
@@ -777,14 +823,43 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Label with "why?" beside it (confidence slider). */
+/* Label on the left, its value pill right-aligned on the same line. The
+   label may wrap at narrow widths; the pill never does. */
+.slider-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-control-header .slider-control-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.slider-control-header .slider-tag {
+  flex: none;
+}
+
+/* Confidence: "50%" and "95%" at the two ends, under the slider. */
+.slider-range-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 .slider-tag {
   align-self: center;
-  padding: 4px 12px;
+  padding: 4px clamp(8px, 2.6vw, 12px);
   border: 1px solid var(--tag-border);
   border-radius: 999px;
   background: var(--tag-background);
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
-  font-size: 12px;
+  font-size: clamp(11px, 3.4vw, 12px); /* a touch smaller at 320px, never wrapping */
   font-weight: 600;
   color: var(--tag-text);
   white-space: nowrap;
@@ -880,6 +955,12 @@ body {
 .slider-ticks--savings .slider-tick:nth-child(1) { left: 0; }
 .slider-ticks--savings .slider-tick:nth-child(2) { right: 0; }
 
+/* Confidence: a calm slate fill (seasons and coins are taken). */
+.slider--confidence {
+  --slider-start: var(--confidence-track-start);
+  --slider-end: var(--confidence-track-end);
+}
+
 /* ==========================================================================
    5. The context button
    ========================================================================== */
@@ -947,42 +1028,11 @@ body {
 }
 
 /* ==========================================================================
-   6. Chips and "why?"
+   6. "why?" (next to the confidence slider's label)
    ========================================================================== */
 
-.chips-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border: 1px solid var(--chip-border);
-  border-radius: 999px;
-  background: var(--chip-background);
-  font-size: 12px;
-  color: var(--text);
-}
-
-.chip--confidence::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-muted);
-}
-
-.chip--confidence-high::before { background: var(--confidence-high); }
-.chip--confidence-medium::before { background: var(--confidence-medium); }
-.chip--confidence-low::before { background: var(--confidence-low); }
-
 .why-toggle {
-  margin-left: auto;
+  flex: none;
   padding: 4px 2px;
   border: none;
   background: none;
@@ -994,14 +1044,13 @@ body {
 }
 
 .why-panel {
-  margin-top: -6px;
   padding: 14px 16px;
 }
 
-.why-panel-source {
-  margin: 0 0 6px;
+/* The forecast's own reliability (the backend's confidence field). */
+.why-panel-reliability {
+  margin: 8px 0 0;
   font-size: 12px;
-  font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -1033,156 +1082,48 @@ body {
 }
 
 /* ==========================================================================
-   7. Details: price range and watch list
+   7. Watch confirmation and the watched items
    ========================================================================== */
 
-.details-card {
-  padding: 14px 16px;
-}
-
-.details-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.details-toggle-arrow {
-  font-size: 12px;
-  transition: transform 0.2s;
-}
-
-.details-toggle[aria-expanded="true"] .details-toggle-arrow {
-  transform: rotate(180deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .details-toggle-arrow { transition: none; }
-}
-
-.details-content {
+.watch-confirmation-block {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--divider);
-  font-size: 13px;
+  align-items: flex-start;
+  gap: 4px;
+  margin: -6px 4px 0;
 }
 
-.price-range-header {
+.watch-confirmation-block .watch-confirmation {
+  margin: 0;
+}
+
+/* "add to google calendar", styled like "why?". */
+.calendar-link {
+  font-weight: 600;
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.watchlist {
+  padding: 14px 16px 8px;
+}
+
+.watchlist-header {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
+  margin-bottom: 6px;
 }
 
-.price-range-header {
-  font-size: 12px;
+.watchlist-empty {
+  margin: 0 0 6px;
+  font-size: 13px;
   color: var(--text-muted);
-}
-
-.price-range-today-label {
-  font-weight: 600;
-  color: var(--text);
-}
-
-/* --band-start, --band-end, --today and --predicted are fractions (0–1)
-   that render.js sets on .price-range, for the bar and the labels below. */
-.price-range-bar {
-  position: relative;
-  height: 8px;
-  margin: 10px 0 6px;
-  border-radius: 999px;
-  background: var(--range-track);
-}
-
-.price-range-band {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--band-start, 0) * 100%);
-  width: calc((var(--band-end, 1) - var(--band-start, 0)) * 100%);
-  border-radius: 999px;
-  background: var(--range-band);
-}
-
-.price-range-today {
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  left: calc(var(--today, 1) * 100%);
-  width: 4px;
-  transform: translateX(-50%);
-  border-radius: 2px;
-  background: var(--range-today);
-}
-
-/* Most likely lowest price: a diamond on the bar, and the same shape in
-   the legend line, so it never relies on color alone. */
-.price-range-predicted,
-.price-range-predicted-key {
-  width: 11px;
-  height: 11px;
-  border: 2px solid var(--glass-border);
-  background: var(--range-predicted);
-  transform: rotate(45deg);
-}
-
-.price-range-predicted {
-  position: absolute;
-  top: -2px;
-  left: calc(var(--predicted, 0) * 100% - 5.5px);
-}
-
-.price-range-predicted-key {
-  flex: none;
-  border-color: transparent;
-}
-
-/* The band's low end is labelled under its start, the high end under its
-   end (right-aligned to it), so neither is mistaken for today's price. */
-.price-range-scale {
-  position: relative;
-  height: 16px;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.price-range-scale > span {
-  position: absolute;
-  white-space: nowrap;
-}
-
-#price-range-low {
-  left: calc(var(--band-start, 0) * 100%);
-}
-
-#best-price-range {
-  left: calc(var(--band-end, 1) * 100%);
-  transform: translateX(-100%);
-}
-
-.price-range-predicted-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.price-range-predicted-label strong {
-  color: var(--text);
 }
 
 .watchlist-title {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
@@ -1313,6 +1254,12 @@ body {
 .dev-panel-status {
   margin: 8px 0 0;
   color: var(--text-muted);
+}
+
+.panel-footer-links {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 10px;
 }
 
 /* ==========================================================================

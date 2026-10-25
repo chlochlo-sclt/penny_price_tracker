@@ -39,10 +39,15 @@
       </section>
 
       <article class="recommendation-card" id="recommendation-card" hidden>
-        <!-- 2. Verdict and the penny coin. Hovering the card tosses
-             the coin; clicking the coin 5 times leaves Demo mode. -->
+        <!-- 1. Verdict card: the verdict with "why?" beside it, the coin, the
+             predicted lowest price, and (when opened) the explanation.
+             Hovering the card tosses the coin; clicking the coin 5 times
+             leaves Demo mode. -->
         <section class="verdict-card glass" aria-label="recommendation">
-          <h2 class="verdict" id="verdict"></h2>
+          <div class="verdict-head">
+            <h2 class="verdict" id="verdict"></h2>
+            <button class="why-toggle" id="why-toggle" type="button" aria-expanded="false" aria-controls="why-panel">why?</button>
+          </div>
           <div class="coin-stage" id="coin" title="penny">
             <span class="coin-shadow" aria-hidden="true"></span>
             <div class="coin" aria-hidden="true">
@@ -55,25 +60,43 @@
               <span class="coin-face coin-face--front"><span class="coin-letter">p</span></span>
             </div>
           </div>
+          <p class="predicted-low-line" id="predicted-low-line"></p>
+
+          <!-- "why?": the backend's own explanation, then the forecast's own
+               reliability (its confidence field). -->
+          <section class="why-panel" id="why-panel" aria-label="why this recommendation" hidden>
+            <p class="why-panel-explanation" id="explanation"></p>
+            <dl class="why-panel-facts">
+              <div class="why-panel-fact" id="expected-savings-row">
+                <dt class="why-panel-fact-label">typical drop, when it drops</dt>
+                <dd class="why-panel-fact-value" id="expected-savings"></dd>
+              </div>
+            </dl>
+            <p class="why-panel-reliability" id="forecast-reliability"></p>
+          </section>
         </section>
 
-        <!-- 3. Chance line (render.js), plus small status lines. -->
-        <div class="chance-plate">
-          <span class="updating-indicator" id="updating-indicator" role="status"></span>
-          <p class="chance-line" id="recommendation-result"></p>
-          <p class="best-day-line" id="best-day-line"></p>
-        </div>
-        <p class="recommendation-status" id="recommendation-status" aria-live="polite" hidden></p>
+        <!-- 2. What the estimate is based on when it isn't all real price
+             history, or real history loading (render.js). -->
         <p class="history-notice" id="history-notice" aria-live="polite" hidden>
           <span class="history-notice-spinner" aria-hidden="true"></span>
           <span id="history-notice-text"></span>
         </p>
 
+        <!-- 3. Chance line (render.js), plus a "couldn't update" line. -->
+        <div class="chance-plate">
+          <span class="updating-indicator" id="updating-indicator" role="status"></span>
+          <p class="chance-line" id="recommendation-result"></p>
+        </div>
+        <p class="recommendation-status" id="recommendation-status" aria-live="polite" hidden></p>
+
         <!-- 4. Sliders (sliders.js). Moving them re-requests the forecast. -->
         <section class="sliders-card glass" aria-label="your goals">
           <div class="slider-control slider-control--deadline" id="deadline-control">
-            <label class="slider-control-label" for="deadline-slider">when do you want it by?</label>
-            <output class="slider-tag" id="deadline-value" for="deadline-slider"></output>
+            <div class="slider-control-header">
+              <label class="slider-control-label" for="deadline-slider">when do you want it by?</label>
+              <output class="slider-tag" id="deadline-value" for="deadline-slider"></output>
+            </div>
             <input class="slider slider--deadline" id="deadline-slider" type="range" min="1" max="90" step="1">
             <!-- Positioned at their real day on the 1–90 track (sidepanel.css). -->
             <div class="slider-ticks slider-ticks--deadline" aria-hidden="true">
@@ -86,76 +109,50 @@
           </div>
 
           <div class="slider-control slider-control--savings" id="savings-control">
-            <label class="slider-control-label" for="savings-slider">how much do you want to save?</label>
-            <output class="slider-tag" id="savings-value" for="savings-slider"></output>
+            <div class="slider-control-header">
+              <label class="slider-control-label" for="savings-slider">how much do you want to save?</label>
+              <output class="slider-tag" id="savings-value" for="savings-slider"></output>
+            </div>
             <input class="slider slider--savings" id="savings-slider" type="range" min="1" max="30" step="1">
             <div class="slider-ticks slider-ticks--savings" aria-hidden="true">
               <span class="slider-tick">1%</span>
               <span class="slider-tick">30%</span>
             </div>
           </div>
+
+          <!-- min_confidence_pct; the schema only accepts 50–95 (sliders.js). -->
+          <div class="slider-control slider-control--confidence" id="confidence-control">
+            <div class="slider-control-header">
+              <label class="slider-control-label" for="confidence-slider">how sure do you want to be?</label>
+              <output class="slider-tag" id="confidence-value" for="confidence-slider"></output>
+            </div>
+            <input class="slider slider--confidence" id="confidence-slider" type="range" min="50" max="95" step="1">
+            <div class="slider-range-row" aria-hidden="true">
+              <span class="slider-range-end" id="confidence-min-tick"></span>
+              <span class="slider-range-end" id="confidence-max-tick"></span>
+            </div>
+          </div>
         </section>
 
         <!-- 5. One button that depends on the verdict (watchlist-ui.js):
-             "wait & watch" / "watching", or "buy now at $X". -->
+             "wait & watch" / "watching", or "buy now at $X" (closes the panel). -->
         <button class="primary-button" id="primary-button" type="button"></button>
-        <p class="watch-confirmation" id="watch-confirmation" aria-live="polite" hidden></p>
 
-        <!-- 6. Chips and "why?" (the backend's own explanation). -->
-        <div class="chips-row">
-          <span class="chip chip--confidence" id="confidence"></span>
-          <span class="chip chip--source" id="data-source-label"></span>
-          <button class="why-toggle" id="why-toggle" type="button" aria-expanded="false" aria-controls="why-panel">why?</button>
+        <!-- 6. "add to google calendar: we'll tell you if it drops …" -->
+        <div class="watch-confirmation-block" id="watch-confirmation-block" hidden>
+          <p class="watch-confirmation" id="watch-confirmation" aria-live="polite"></p>
         </div>
-        <section class="why-panel glass" id="why-panel" aria-label="why this recommendation" hidden>
-          <p class="why-panel-source" id="why-source-note" hidden></p>
-          <p class="why-panel-explanation" id="explanation"></p>
-          <dl class="why-panel-facts">
-            <div class="why-panel-fact" id="expected-savings-row">
-              <dt class="why-panel-fact-label">typical drop, when it drops</dt>
-              <dd class="why-panel-fact-value" id="expected-savings"></dd>
-            </div>
-            <div class="why-panel-fact">
-              <dt class="why-panel-fact-label">best day to buy</dt>
-              <dd class="why-panel-fact-value" id="best-day"></dd>
-            </div>
-          </dl>
-        </section>
       </article>
 
-      <!-- 7. Details: price range (when there's a forecast) and the watch
-           list (whenever something is watched). -->
-      <section class="details-card glass" id="details-card" hidden>
-        <button class="details-toggle" id="details-toggle" type="button" aria-expanded="false" aria-controls="details-content">
-          <span>details</span>
-          <span class="details-toggle-arrow" aria-hidden="true">▼</span>
-        </button>
-        <div class="details-content" id="details-content" hidden>
-          <section class="price-range" id="price-range" aria-labelledby="price-range-title">
-            <div class="price-range-header">
-              <span class="price-range-title" id="price-range-title">likely price range</span>
-              <span class="price-range-today-label" id="price-range-today-label"></span>
-            </div>
-            <div class="price-range-bar" id="price-range-bar" role="img">
-              <span class="price-range-band"></span>
-              <span class="price-range-predicted" id="price-range-predicted"></span>
-              <span class="price-range-today"></span>
-            </div>
-            <div class="price-range-scale" aria-hidden="true">
-              <span id="price-range-low"></span>
-              <span id="best-price-range"></span>
-            </div>
-            <p class="price-range-predicted-label" id="price-range-predicted-label">
-              <span class="price-range-predicted-key" aria-hidden="true"></span>
-              most likely lowest price: <strong id="price-range-predicted-value"></strong>
-            </p>
-          </section>
-
-          <section class="watchlist" id="watchlist" aria-labelledby="watchlist-title" hidden>
-            <h3 class="watchlist-title" id="watchlist-title">watch list</h3>
-            <ul class="watchlist-items" id="watchlist-items"></ul>
-          </section>
+      <!-- Watched items, opened from either "see watched items" link
+           (watchlist-ui.js). Each item has its target, deadline and remove. -->
+      <section class="watchlist glass" id="watchlist" aria-labelledby="watchlist-title" hidden>
+        <div class="watchlist-header">
+          <h3 class="watchlist-title" id="watchlist-title">watched items</h3>
+          <button class="link-button" id="watchlist-close" type="button">close</button>
         </div>
+        <ul class="watchlist-items" id="watchlist-items"></ul>
+        <p class="watchlist-empty" id="watchlist-empty" hidden>nothing watched yet. use "wait &amp; watch" on a product to add it here.</p>
       </section>
     </main>
 
@@ -215,11 +212,6 @@
             <option value="__error">request fails (error)</option>
           </select>
         </label>
-        <!-- Overrides min_confidence_pct (backend default 65; schema allows 50–95). -->
-        <label class="dev-panel-field">
-          <span class="dev-panel-label">min confidence <output id="dev-min-confidence-value"></output></span>
-          <input class="dev-panel-range" id="dev-min-confidence" type="range" min="50" max="95" step="1">
-        </label>
         <div class="dev-panel-group">
           <label class="dev-panel-field">
             <span class="dev-panel-label">watched item</span>
@@ -232,6 +224,11 @@
           <p class="dev-panel-status" id="dev-simulate-status" aria-live="polite"></p>
         </div>
       </details>
+
+      <!-- Always there, so the watched list is reachable from any page. -->
+      <p class="panel-footer-links">
+        <button class="link-button" id="see-watched-from-footer" type="button" aria-controls="watchlist">see watched items</button>
+      </p>
 
       <!-- 9. Brand mark: one bronze circle per letter. Screen readers get
            just "penny"; the letters' case is set in one rule (.brand-mark). -->

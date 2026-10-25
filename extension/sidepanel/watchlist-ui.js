@@ -1,11 +1,12 @@
 // The side-panel half of "wait & watch": the one context-dependent button on
-// the card, the watch list in "details", and the dev-tools buttons that
+// the card, the watched-items list, and the dev-tools buttons that
 // simulate a price drop or an approaching deadline. Storage lives in
 // shared/watchlist.js; notifications come from background/background.js.
 //
 // The button depends on the verdict (set by sidepanel.js after each forecast):
 //   buy now / leaning buy now  → "buy now at $X": scrolls the page to its own
-//                                buy button (SCROLL_TO_BUY in content.js)
+//                                buy button (SCROLL_TO_BUY in content.js) and
+//                                closes the side panel
 //   wait / leaning wait        → "wait & watch": saves a watch with the
 //                                current sliders; then "watching" (click
 //                                again to stop), or "update watch" if the
@@ -70,18 +71,25 @@ const WatchlistUI = (() => {
     }
 
     const confirmation = $("watch-confirmation");
+    const block = $("watch-confirmation-block");
     const existing = await getWatch(product.product_id);
     if (existing && matchesGoal(existing, product, getGoal())) {
       await stopWatching(product.product_id);
-      confirmation.hidden = true;
+      block.hidden = true;
       return;
     }
 
     const watch = createWatch(product, getGoal());
-    confirmation.hidden = false;
+    block.hidden = false;
     if (await saveWatch(watch)) {
       confirmation.className = "watch-confirmation";
-      confirmation.textContent = `watching: we'll tell you if it drops ${watch.target_pct}% before ${deadlineText(watch)}.`;
+      const link = document.createElement("a");
+      link.className = "calendar-link";
+      link.href = googleCalendarUrl(watch);
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "add to google calendar";
+      confirmation.replaceChildren(link, `: we'll tell you if it drops ${watch.target_pct}% before ${deadlineText(watch)}.`);
     } else {
       confirmation.className = "watch-confirmation watch-confirmation--error";
       confirmation.textContent = "couldn't save this watch. try again.";
@@ -90,7 +98,58 @@ const WatchlistUI = (() => {
     await renderList();
   }
 
-  // ---- Watch list (inside "details") --------------------------------------
+  // ---- "add to google calendar" ---------------------------------------------
+
+  /** The product title, cut at a word boundary so the event title stays short. */
+  function shortTitle(title, max = 40) {
+    const clean = (title || "this item").replace(/\s+/g, " ").trim();
+    if (clean.length <= max) return clean;
+    const cut = clean.slice(0, max);
+    return `${cut.slice(0, cut.lastIndexOf(" ") > 20 ? cut.lastIndexOf(" ") : max).trimEnd()}…`;
+  }
+
+  /**
+   * Google Calendar's public event-template link (no sign-in or API): an
+   * all-day event on the watch's deadline, with the target, the product URL
+   * and the starting price. Every value is URL-encoded.
+   */
+  function googleCalendarUrl(watch) {
+    const day = parseIsoDate(watch.deadline_date);
+    const compact = (date) => toIsoDate(date).replaceAll("-", "");
+    const params = {
+      action: "TEMPLATE",
+      text: `last day to buy: ${shortTitle(watch.title)} — check penny`,
+      // All-day events use an exclusive end date: the day after the deadline.
+      dates: `${compact(day)}/${compact(addDays(day, 1))}`,
+      details: [
+        `target: drops ${watch.target_pct}% to ${formatMoney(watch.target_price)} or less`,
+        `product: ${watch.url}`,
+        `the price was ${formatMoney(watch.price_at_watch)} when you started watching.`,
+      ].join("\n"),
+    };
+    const query = Object.entries(params).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&");
+    return `https://calendar.google.com/calendar/render?${query}`;
+  }
+
+  // ---- Watched items ------------------------------------------------------
+  // Opened by "see watched items" (always in the footer, on every page),
+  // closed by its own "close" link.
+
+  function openWatchlist(opener) {
+    const list = $("watchlist");
+    list.hidden = false;
+    list.dataset.opener = opener.id;
+    $("see-watched-from-footer").setAttribute("aria-expanded", "true");
+    list.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+    $("watchlist-close").focus({ preventScroll: true });
+  }
+
+  function closeWatchlist() {
+    const list = $("watchlist");
+    list.hidden = true;
+    $("see-watched-from-footer").setAttribute("aria-expanded", "false");
+    $(list.dataset.opener || "see-watched-from-footer")?.focus({ preventScroll: true });
+  }
 
   function statusText(watch) {
     if (watch.notified?.drop) return "target price reached";
@@ -110,7 +169,7 @@ const WatchlistUI = (() => {
 
   async function renderList() {
     const watches = await getWatches();
-    $("watchlist").hidden = watches.length === 0;
+    $("watchlist-empty").hidden = watches.length > 0;
     const list = $("watchlist-items");
     const template = $("watchlist-item-template");
     list.replaceChildren(
@@ -130,7 +189,6 @@ const WatchlistUI = (() => {
         return item;
       }),
     );
-    syncDetailsCard();
     renderDevWatchOptions(watches);
   }
 
@@ -181,6 +239,12 @@ const WatchlistUI = (() => {
     getGoal = options.getGoal;
 
     $("primary-button").addEventListener("click", onPrimaryClick);
+    $("see-watched-from-footer").setAttribute("aria-expanded", "false");
+    $("see-watched-from-footer").addEventListener("click", (event) => {
+      if ($("watchlist").hidden) openWatchlist(event.currentTarget);
+      else closeWatchlist();
+    });
+    $("watchlist-close").addEventListener("click", closeWatchlist);
     $("dev-simulate-drop").addEventListener("click", () => simulate("drop"));
     $("dev-simulate-deadline").addEventListener("click", () => simulate("deadline"));
 

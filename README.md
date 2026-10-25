@@ -67,13 +67,13 @@ To add a store (e.g. Target), write `content/extractors/target.js`, add it and t
 The side panel calls `POST http://127.0.0.1:8000/predict` with `{ ...product, preferences }`. The request comes from the side panel, not the content script, and the request and response shapes are defined in `app/schemas.py`.
 
 - **Backend URL:** `API_BASE_URL` in `shared/config.js`. If you change it, also update `host_permissions` in `manifest.json`, or Chrome will block the request.
-- **Preferences:** `getPreferences()` in `sidepanel/api.js` sends `min_savings_pct` (1–30 from the slider; the backend allows 1–50), `deadline_days` (1–90), and `min_confidence_pct` at 65 (dev tools can override it, 50–95). The schema leaves `min_confidence_pct` unset by default, and the backend then uses 65 (`DEFAULTS` in `app/decision.py`). `risk_tolerance` isn't sent, since it's only a shortcut for `min_confidence_pct`. If storage is empty or broken, the sliders default to 5% and 14 days.
-- **Response extras:** `predicted_low_usd` (the most likely lowest price) is a diamond on the price bar. `best_day` is always set, and shows as "today" when buying now is best. The expected drop (`expected_drop_pct` / `expected_drop_usd`) appears in "why?" only on a wait card. Next to the most likely lowest price on a buy-now card, the two looked contradictory.
-- **Data source:** the chip always shows `data_source`. For `"simulated"`, `"mixed"` and `"mock"`, "why?" starts with a line saying what the numbers are based on, and the history note says the same. Neither implies real price history when there isn't any.
+- **Preferences:** `getPreferences()` in `sidepanel/api.js` sends `min_savings_pct` (1–30 from the slider; the backend allows 1–50), `deadline_days` (1–90), and `min_confidence_pct` (50–95, the schema's limits) from the confidence slider. If storage is empty or broken, the sliders default to 5%, 14 days and 65% (the backend's own default for `min_confidence_pct`).
+- **Response extras:** `predicted_low_usd` and `best_day` appear as "predicted lowest price: $X on DATE" ("today" when that's today). The expected drop (`expected_drop_pct` / `expected_drop_usd`) appears in "why?" only on a wait card; on buy now it would sit next to the predicted lowest price and look contradictory.
+- **Data source:** for `"simulated"`, `"mixed"` and `"mock"`, a note under the chance line says what the estimate is based on, so nothing implies real price history when there isn't any. `"real"` shows no note.
 - **Real price history (`history_status`):**
   - `"ready"`: no note.
   - `"fetching"`: the backend answered from labeled simulated history and is fetching real history in the background. The panel shows that forecast with "loading real price history…". Every 30 seconds it polls the cheap `GET /history-status/{product_id}`, at most 4 times (`HISTORY_RETRY` in `sidepanel/sidepanel.js`), and re-requests `/predict` only once the status changes from `"fetching"`. After the limit, it says it couldn't load real history yet. A backend without that endpoint (a 404) falls back to re-requesting `/predict`. Switching tabs or products, or closing the panel, cancels polling. A slider move cancels a pending poll, and its own answer starts polling again if needed.
-  - `"failed"` / `"unavailable"`: a small note that real price history isn't available for this item, plus what the estimate is based on. The result and its data-source chip stay.
+  - `"failed"` / `"unavailable"`: the result stays, with the data-source note.
   - Older backends that don't send the field are treated as `"ready"`.
 - **Current price for watches:** `getCurrentPrice(watch)` in `background/background.js` calls `GET /price/{product_id}` and expects `{ "price": 123.45 }`. That endpoint doesn't exist yet; until it does, checks are skipped quietly (and so are price-drop notifications from real checks).
 - **Errors:** requests time out after 10 seconds. The panel shows separate messages for a backend that isn't running, a timeout, a 422 (with the backend's own message, e.g. "Only USD prices are supported right now."), and any other failure, with a **Try again** button.
@@ -98,7 +98,7 @@ Below the dropdowns, **Watched item** with **Simulate price drop** and **Simulat
 
 The dropdown choices are saved in `chrome.storage.local` and kept between panel openings. Dev tools start collapsed, and are hidden automatically for Chrome Web Store installs.
 
-**Min confidence** overrides `min_confidence_pct` (default 65, the backend's default). The schema only accepts 50–95, so the slider stops there; 25 would be rejected with a 422. It's saved with the other dev settings. To demo a wait verdict: AirPods Pro 2 (`B0BDHWDR12`) with a 3% savings goal and a 35-day deadline is "buy now" at 65 (a 59% chance) and "wait" at 50.
+To demo a wait verdict, use the confidence slider. AirPods Pro 2 (`B0BDHWDR12`) with a 3% savings goal and a 35-day deadline is "buy now" at 65% (a 59% chance) and "wait" at 50%.
 
 **Demo mode** (checkbox at the top of Dev tools) hides the dev tools completely, for judging, and is remembered. Any mock settings you picked stay in effect. To bring the dev tools back, press **Alt+Shift+D** (Option+Shift+D on a Mac) with the panel focused, or click the coin 5 times.
 
@@ -117,12 +117,24 @@ Chrome needs permission to show notifications: **System Settings → Notificatio
 The side panel follows the design in `student_shopping_assistant_chrome_extension_side_panel.html` (the 360×800 panel only), rebuilt as plain CSS with no remote scripts or fonts. Top to bottom:
 
 1. **Product line:** small, the title and the current price.
-2. **Verdict card:** the verdict in large, extra-bold Inter, one word per line: "wait", "buy / now", or either with a small "leaning" above it. The box is always as tall as the tallest case, "leaning / buy / now", with shorter verdicts centered in it, so nothing below moves when the verdict changes. A short fade plays when it does change, except with reduced motion. The penny coin sits beside it. "wait" uses the text color, "buy now" emerald, and "leaning wait" or "leaning buy now" grey. Hovering the card tosses the coin.
-3. **Chance line:** with "best day to buy: …" under it, from the backend's `best_day` ("today" when that's today, e.g. on buy now). The chance line comes from the backend's `p_drop`, the savings %, the dollar amount at today's price and the real date, e.g. "62% chance you'll save $115+ (10%) by nov 27."
-4. **Sliders card:** "when do you need it by?" takes any day from 1 to 90; its tag shows the real date, plus "· black friday", "· halloween", "· christmas" or "· new year's day" within 2 days of that holiday, for any year. "how much do you want to save?" runs from 1% to 30% on a copper → silver → gold track.
-5. **One button:** "wait & watch" saves a watch, then reads "watching" (click again to stop) or "update watch" if the sliders have changed. When the verdict is buy now, it reads "buy now at $X" and scrolls the page to Amazon's own buy button.
-6. **Chips:** the backend's confidence and data source ("real price data", "partly simulated data", "simulated data", "mock data"), plus **why?** to expand the backend's explanation, typical drop and best day.
-7. **Details:** collapsible. It holds the likely price range bar (from `interval_low_usd` to `interval_high_usd`, with today's price and the most likely lowest price marked) and the real watch list.
+2. **Verdict card:** the verdict in extra-bold Inter with **why?** right next to it, the penny coin on the right (hover the card to toss it), and "predicted lowest price: $5.69 on nov 10" underneath (from `predicted_low_usd` and `best_day`, or "… today"). **why?** expands, inside the same card, the backend's explanation, the typical drop (wait cards only) and "forecast reliability: …" from the backend's `confidence`.
+   - "wait" or "buy now" sits on one line, large. A leaning verdict shows "leaning" large, with the verdict words smaller and stacked beside it; the stack is exactly as tall as "leaning", and a single word ("wait") is centered in it.
+   - Every case is the same height, so nothing below moves. The verdict and coin scale down a little on narrow panels so the verdict, "why?" and the coin never overlap.
+   - A short fade plays when the verdict changes, except with reduced motion. "wait" uses the text color, "buy now" emerald, and any leaning verdict grey.
+3. **Data-source note:** whenever the estimate isn't all real price history. For simulated data: "real price history isn't available for this item. this estimate uses simulated prices, not real price history." For mixed: "only part of this item's price history is real. this estimate is partly based on simulated prices." While real history loads, it says so first.
+4. **Chance line:** from the backend's `p_drop`, the savings %, the dollar amount at today's price and the real date, e.g. "90% chance you'll save $0.06+ (1%) by nov 13."
+5. **Sliders card:**
+   - "when do you want it by?", with its value ("by nov 13") right-aligned on the label's line. Any day from 1 to 90; the value adds "· black friday", "· halloween", "· christmas" or "· new year's day" within 2 days of that holiday, for any year.
+   - "how much do you want to save?", with its value ("$0.06 · 1%") right-aligned on the label's line. 1% to 30%, on a copper → silver → gold track.
+   - "how sure do you want to be?", sent as `min_confidence_pct` (default 65). The schema only accepts 50–95, so the slider runs from 50 to 95. Its value ("65% · medium") is right-aligned on the label's line, like the other two, with "50%" and "95%" under the slider. The words come from `CONFIDENCE_LEVELS` in `sidepanel/sliders.js`: up to 64 low, up to 79 medium, then high.
+   - On narrow panels the labels wrap; the value pills shrink slightly but never wrap.
+6. **One button:** "wait & watch" saves a watch, then reads "watching" (click again to stop) or "update watch" if the sliders have changed. When the verdict is buy now, it reads "buy now at $X": it scrolls the page to Amazon's own buy button and closes the side panel.
+7. **Watch confirmation:** "add to google calendar: we'll tell you if it drops 1% before nov 13." The link opens Google Calendar's event-template page in a new tab (no sign-in or API), pre-filled with:
+   - title: "last day to buy: [short title] — check penny";
+   - an all-day event on the watch's deadline;
+   - a description with the target, the product URL and the starting price. All values come from the saved watch and are URL-encoded.
+
+   **see watched items** appears once, at the bottom above the brand mark, on every page. It opens the watched items, each with its target, deadline and **remove**; **close** hides them.
 8. **Dev tools:** collapsed, and hidden entirely in Demo mode.
 9. **Brand mark:** "penny" at the very bottom, one small bronze circle per letter, colored like the coin, built in HTML/CSS (screen readers hear "penny").
 
@@ -138,7 +150,7 @@ The brand mark's letter case is set in a single rule, `text-transform` on `.bran
 
 Every color is a custom property in the "Colors" section of `extension/sidepanel/sidepanel.css`:
 
-- **Text, glass, chips, slider tags and tracks:** the first `:root` block (light) and `:root[data-theme="dark"]` (December).
+- **Text, glass, slider tags and tracks (including the confidence track, `--confidence-track-*`):** the first `:root` block (light) and `:root[data-theme="dark"]` (December).
 - **Verdict:** `--verdict-wait`, `--verdict-buy`, `--verdict-leaning` (separate values for dark).
 - **Button:** `--button-watch-*`, `--button-watching-*`, `--button-buy-*`.
 - **Seasons:** `--season-<name>-1/-2/-3` (the three blobs; `-1` also fills the date slider) and `--season-<name>-base` (light background) for `early-fall`, `halloween`, `november`, `winter`, `christmas`, `new-year`, `late-winter`, `late-winter-pink`, `spring` and `summer`. The dark background is `--mesh-dark-base`.
@@ -165,7 +177,7 @@ sh extension/icons/export-icons.sh
 
 `extension/screenshots/` has the design review images. They aren't used by the extension:
 
-- every verdict state: `state-wait`, `state-buy-now`, `state-leaning-wait`, `state-leaning-buy-now`, `state-fetching`, and `state-wait-details-open` (why?, details and a watch);
+- every verdict state: `state-wait`, `state-buy-now`, `state-leaning-wait`, `state-leaning-buy-now`, plus `why-open`, `watch-confirmation`, `watched-items-open` and `panel-320px-leaning-buy-now`;
 - the panel at each holiday deadline: `date-halloween`, `date-black-friday`, `date-christmas`, `date-new-year`;
 - the top of the panel in every season: `season-*`;
 - the coin at rest and mid-toss: `coin-rest`, `coin-toss`;

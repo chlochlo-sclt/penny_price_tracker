@@ -53,26 +53,22 @@ async function scrollPageToBuyButton() {
   }
 }
 
-// How sure the forecast must be before penny says "Wait". There's no UI for
-// it (dev tools can override it). app/schemas.py leaves min_confidence_pct
-// unset (None), and the backend then falls back to 65 (DEFAULTS in
-// app/decision.py), so send 65. The schema only accepts 50–95.
+// min_confidence_pct ("how sure do you want to be?" slider): the backend's
+// default is 65 (app/schemas.py leaves it unset; DEFAULTS in app/decision.py
+// uses 65), and the schema only accepts 50–95.
 const DEFAULT_MIN_CONFIDENCE_PCT = 65;
 const MIN_CONFIDENCE_RANGE = { min: 50, max: 95 };
 
 /**
- * The Preferences object for app/schemas.py, built from the slider values:
+ * The Preferences object for app/schemas.py, from the three sliders:
  *   min_savings_pct     1–50   only count drops at least this big (%)
- *   min_confidence_pct  50–95  65 unless dev tools override it (see above)
+ *   min_confidence_pct  50–95  how sure the forecast must be to say "wait"
  *   deadline_days       1–90   how long the shopper can wait
- * risk_tolerance (a shortcut for min_confidence_pct) isn't sent, because we
- * send the number itself.
  */
-function getPreferences({ min_savings_pct, deadline_days }, minConfidencePct = DEFAULT_MIN_CONFIDENCE_PCT) {
-  const confidence = Number.isFinite(Number(minConfidencePct)) ? Number(minConfidencePct) : DEFAULT_MIN_CONFIDENCE_PCT;
+function getPreferences({ min_savings_pct, deadline_days, min_confidence_pct = DEFAULT_MIN_CONFIDENCE_PCT }) {
   return {
     min_savings_pct,
-    min_confidence_pct: Math.min(MIN_CONFIDENCE_RANGE.max, Math.max(MIN_CONFIDENCE_RANGE.min, confidence)),
+    min_confidence_pct: Math.min(MIN_CONFIDENCE_RANGE.max, Math.max(MIN_CONFIDENCE_RANGE.min, Number(min_confidence_pct))),
     deadline_days,
   };
 }
